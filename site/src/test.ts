@@ -15,4 +15,7 @@ if (typeof window !== "undefined") {
   it("basic", () => {
     compressed_tree.greet("hi");
   });
+  it("cursor", () => {
+    new compressed_tree.WasmCursor();
+  });
 }
