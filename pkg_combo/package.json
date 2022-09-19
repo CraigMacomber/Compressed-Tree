@@ -1,0 +1,25 @@
+{
+  "name": "compressed-tree",
+  "collaborators": [
+    "Craig Macomber <crmacomb@microsoft.com>"
+  ],
+  "description": "Experimental compressed tree storage for FluidFramework's tree in WASM using Rust.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CraigMacomber/Compressed-Tree"
+  },
+  "files": [
+    "/nodejs/compressed_tree_bg.wasm",
+    "/nodejs/compressed_tree.js",
+    "/nodejs/compressed_tree.d.ts",
+    "/bundler/compressed_tree_bg.wasm",
+    "/bundler/compressed_tree.js",
+    "/bundler/compressed_tree_bg.js"
+  ],
+  "main": "./nodejs/compressed_tree.js",
+  "types": "./nodejs/compressed_tree.d.ts",
+  "sideEffects": false,
+  "module": "./bundler/compressed_tree.js"
+}

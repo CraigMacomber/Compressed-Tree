@@ -1,0 +1,7 @@
+[workspace]
+members = ["./compressed_tree", "./example"]
+
+[profile.release]
+lto = true
+# debug = true
+opt-level = "z"
