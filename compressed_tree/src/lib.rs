@@ -22,9 +22,9 @@ mod tests {
 }
 
 trait UpPath {}
-struct Value(Option<JsValue>);
-struct FieldKey;
-struct TreeType;
+struct Value(Option<f64>); // TODO: more value types
+struct FieldKey(String);
+struct TreeType(String);
 
 trait NodesCursor: Sized {
     type TFields: FieldsCursor<TNodes = Self>;
@@ -83,7 +83,7 @@ trait NodesCursor: Sized {
     /**
      * The same as `seek_nodes(1)`, but might be faster.
      */
-    fn next_node(&self) -> EitherCursor<Self, Self::TFields>;
+    fn next_node(self) -> EitherCursor<Self, Self::TFields>;
 
     /**
      * Navigate up to parent field.
@@ -169,7 +169,7 @@ trait FieldsCursor: Sized {
      *
      * Allowed when `mode` is `Fields`.
      */
-    fn skip_pending_fields() -> EitherCursor<Self::TNodes, Self>;
+    fn skip_pending_fields(self) -> EitherCursor<Self::TNodes, Self>;
 
     // ********** APIs for when mode = Fields, and not pending ********** //
 
@@ -185,7 +185,7 @@ trait FieldsCursor: Sized {
      *
      * Allowed when `mode` is `Fields`, and not `pending`.
      */
-    fn get_field_length() -> i32;
+    fn get_field_length(&self) -> i32;
 
     /**
      * Moves to the first node of the selected field, setting mode to `Nodes`.
@@ -205,274 +205,12 @@ trait FieldsCursor: Sized {
     fn enter_node(self, child_index: i32) -> Self::TNodes;
 }
 
-/**
- * A stateful low-level interface for reading tree data.
- */
-trait TreeCursor: FieldsCursor + NodesCursor {
-    /**
-     * What kind of place the cursor is at.
-     * Determines which operations are allowed.
-     */
-    fn mode(&self) -> CursorLocationType;
 
-    /*
-     * True iff the current field or node (depending on mode) is "pending",
-     * meaning that it has not been downloaded.
-     */
-    fn pending(&self) -> bool;
-}
-
-enum CursorLocationType {
-    /**
-     * Can iterate through nodes in a field.
-     * At a "current node".
-     */
-    Nodes,
-
-    /**
-     * Can iterate through fields of a node.
-     * At a "current field".
-     */
-    Fields,
-}
 
 enum EitherCursor<TNodes, TFields: FieldsCursor<TNodes = TNodes>> {
     Nodes(TNodes),
     Fields(TFields),
 }
 
-impl<TNodes: NodesCursor<TFields = TFields>, TFields: FieldsCursor<TNodes = TNodes>> FieldsCursor
-    for EitherCursor<TNodes, TFields>
-{
-    type TNodes = Self;
-
-    fn next_field(self) -> EitherCursor<Self::TNodes, Self> {
-        match self {
-            EitherCursor::Fields(fields) => {
-                match fields.next_field() {
-                    EitherCursor::Nodes(n) => EitherCursor::Nodes(Self::Nodes(n)),
-                    EitherCursor::Fields(f) => EitherCursor::Fields(Self::Fields(f)),
-                }
-            }
-            EitherCursor::Nodes(_) => panic!(),
-        }
-    }
-
-    fn exit_field(self) -> Self::TNodes {
-        match self {
-            EitherCursor::Fields(fields) => Self::Nodes(fields.exit_field()),
-            EitherCursor::Nodes(_) => panic!(),
-        }
-    }
-
-    fn skip_pending_fields() -> EitherCursor<Self::TNodes, Self> {
-        todo!()
-    }
-
-    fn get_field_length() -> i32 {
-        todo!()
-    }
-
-    fn first_node(self) -> EitherCursor<Self::TNodes, Self> {
-        todo!()
-    }
-
-    fn enter_node(self, child_index: i32) -> Self::TNodes {
-        todo!()
-    }
-}
-
-impl<TNodes: NodesCursor<TFields = TFields>, TFields: FieldsCursor<TNodes = TNodes>> NodesCursor for EitherCursor<TNodes, TFields> {
-    type TFields = Self;
-
-    fn field_index(&self) -> i32 {
-        match self {
-            EitherCursor::Nodes(_) => self.field_index(),
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-
-    fn chunk_start(&self) -> i32 {
-        match self {
-            EitherCursor::Nodes(_) => self.chunk_start(),
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-
-    fn chunk_length(&self) -> i32 {
-        match self {
-            EitherCursor::Nodes(_) => self.chunk_length(),
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-
-    fn seek_nodes(self, offset: i32) -> EitherCursor<Self, Self::TFields> {
-        match self {
-            EitherCursor::Nodes(_) => self.seek_nodes(offset),
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-
-    fn next_node(&self) -> EitherCursor<Self, Self::TFields> {
-        match self {
-            EitherCursor::Nodes(_) => self.next_node(),
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-
-    fn exit_node(self) -> Self::TFields {
-        match self {
-            EitherCursor::Nodes(_) => self.exit_node(),
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-
-    fn value(&self) -> Value {
-        match self {
-            EitherCursor::Nodes(_) => self.value(),
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-
-    fn first_field(self) -> EitherCursor<Self, Self::TFields> {
-        match self {
-            EitherCursor::Nodes(n) => {
-                match n.first_field() {
-                    EitherCursor::Nodes(n) => EitherCursor::Nodes(Self::Nodes(n)),
-                    EitherCursor::Fields(f) => EitherCursor::Fields(Self::Fields(f)),
-                }
-            },
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-
-    fn enter_field(self, key: FieldKey) -> EitherCursor<Self, Self::TFields> {
-        match self {
-            EitherCursor::Nodes(_) => self.enter_field(key),
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-
-    fn node_type(&self) -> TreeType {
-        match self {
-            EitherCursor::Nodes(_) => self.node_type(),
-            EitherCursor::Fields(_) => panic!(),
-        }
-    }
-}
-
-impl<TNodes: NodesCursor<TFields = TFields>, TFields: FieldsCursor<TNodes = TNodes>> TreeCursor for EitherCursor<TNodes, TFields> {
-    fn mode(&self) -> CursorLocationType {
-        match self {
-            EitherCursor::Nodes(_) => CursorLocationType::Nodes,
-            EitherCursor::Fields(_) => CursorLocationType::Fields,
-        }
-    }
-
-    fn pending(&self) -> bool {
-        // For now only support non-pending data.
-        false
-    }
-}
-
-
-struct BasicNodes {}
-
-impl NodesCursor for BasicNodes {
-    type TFields = BasicFields;
-
-    fn field_index(&self) -> i32 {
-        todo!()
-    }
-
-    fn chunk_start(&self) -> i32 {
-        todo!()
-    }
-
-    fn chunk_length(&self) -> i32 {
-        todo!()
-    }
-
-    fn seek_nodes(self, offset: i32) -> EitherCursor<Self, Self::TFields> {
-        todo!()
-    }
-
-    fn next_node(&self) -> EitherCursor<Self, Self::TFields> {
-        todo!()
-    }
-
-    fn exit_node(self) -> Self::TFields {
-        todo!()
-    }
-
-
-    fn value(&self) -> Value {
-        todo!()
-    }
-
-    fn first_field(self) -> EitherCursor<Self, Self::TFields> {
-        todo!()
-    }
-
-    fn enter_field(self, key: FieldKey) -> EitherCursor<Self, Self::TFields> {
-        todo!()
-    }
-
-    fn node_type(&self) -> TreeType {
-        todo!()
-    }
-} 
-
-struct BasicFields {}
-
-impl FieldsCursor for BasicFields {
-    type TNodes = BasicNodes;
-
-    fn next_field(self) -> EitherCursor<Self::TNodes, Self> {
-        todo!()
-    }
-
-    fn exit_field(self) -> Self::TNodes {
-        todo!()
-    }
-
-    fn skip_pending_fields() -> EitherCursor<Self::TNodes, Self>  {
-        todo!()
-    }
-
-    fn get_field_length() -> i32 {
-        todo!()
-    }
-
-    fn first_node(self) -> EitherCursor<Self::TNodes, Self> {
-        todo!()
-    }
-
-    fn enter_node(self, child_index: i32) -> Self::TNodes {
-        todo!()
-    }
-} 
-
-#[wasm_bindgen]
-pub struct WasmCursor(EitherCursor<BasicNodes, BasicFields>);
-
-#[wasm_bindgen]
-impl WasmCursor {
-    #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
-        todo!()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn mode(&self) -> i32 {
-        match self.0 {
-            EitherCursor::Nodes(_) => 0,
-            EitherCursor::Fields(_) => 1,
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn pending(&self) -> bool {
-        self.0.pending()
-    }
-}
+pub mod basic_tree;
+pub mod wasm;
