@@ -1,5 +1,7 @@
-// #![no_std]
+#[macro_use]
+extern crate macro_rules_attribute;
 
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -214,3 +216,4 @@ enum EitherCursor<TNodes, TFields: FieldsCursor<TNodes = TNodes>> {
 
 pub mod basic_tree;
 pub mod wasm;
+pub mod forest;

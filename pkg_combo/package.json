@@ -1,7 +1,7 @@
 {
   "name": "compressed-tree",
   "collaborators": [
-    "Craig Macomber <crmacomb@microsoft.com>"
+    "Craig Macomber <Craig.Macomber@microsoft.com>"
   ],
   "description": "Experimental compressed tree storage for FluidFramework's tree in WASM using Rust.",
   "version": "0.1.0",
