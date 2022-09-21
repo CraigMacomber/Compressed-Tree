@@ -1,7 +1,7 @@
 #![feature(associated_type_bounds)]
 
 #[macro_use]
-extern crate macro_rules_attribute;
+extern crate lazy_static;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;

@@ -1,7 +1,6 @@
-use std::{rc::Rc, usize};
+use std::{collections::HashMap, rc::Rc, usize};
 
 use super::{
-    chunk::{HasId, NodeChunkIndex},
     tree::{Def, Indexable, Label, NodeData, NodeNav},
     util::{slice_with_length, ImSlice},
 };
@@ -22,8 +21,6 @@ impl PartialEq for UniformChunk {
 
 pub struct RootChunkSchema {
     pub schema: ChunkSchema,
-    /// Derived data (from schema) to enable fast lookup of views from id.
-    id_offset_to_byte_offset_and_schema: Vec<Option<OffsetInfo>>,
 }
 
 #[derive(Clone)]
@@ -49,18 +46,11 @@ pub struct OffsetInfoRef<'a> {
 
 impl RootChunkSchema {
     pub fn new(schema: ChunkSchema) -> Self {
-        let mut data_outer = vec![None; schema.id_stride as usize];
-
-        fn add(
-            data: &mut [Option<OffsetInfo>],
-            s: &ChunkSchema,
-            byte_offset: u32,
-            parent: ParentInfo,
-        ) {
+        fn add(s: &ChunkSchema, byte_offset: u32, parent: ParentInfo) {
+            // TODO: compute any desired derived data from schema here.
             for (label, sub_schema) in s.traits.iter() {
                 for i in 0..sub_schema.schema.node_count {
                     add(
-                        data,
                         &sub_schema.schema,
                         byte_offset + sub_schema.byte_offset + i * sub_schema.schema.bytes_per_node,
                         ParentInfo {
@@ -73,7 +63,6 @@ impl RootChunkSchema {
         }
 
         add(
-            &mut data_outer.as_mut_slice(),
             &schema,
             0,
             ParentInfo {
@@ -82,10 +71,7 @@ impl RootChunkSchema {
             },
         );
 
-        RootChunkSchema {
-            schema,
-            id_offset_to_byte_offset_and_schema: data_outer,
-        }
+        RootChunkSchema { schema }
     }
 }
 
@@ -95,8 +81,6 @@ pub struct ChunkSchema {
     /// number of nodes at this level
     pub node_count: u32,
     pub bytes_per_node: u32,
-    /// total number in subtree (nodes under traits + 1)
-    pub id_stride: u32,
     pub payload_size: Option<u16>,
     pub traits: std::collections::HashMap<Label, OffsetSchema, ahash::RandomState>,
 }
@@ -151,7 +135,7 @@ impl<'a> UniformChunkNode<'a> {
 }
 
 impl<'b> NodeNav for UniformChunkNode<'b> {
-    type TTraitChildren<'a> = ChunkIndexer<'a> where Self: 'a;
+    type TTraitChildren<'a> = ChunkInfo<'a> where Self: 'a;
     type TFields<'a> = ChunkFieldsIterator<'a> where Self: 'a;
 
     fn get_traits<'a>(&'a self) -> Self::TFields<'a> {
@@ -168,13 +152,15 @@ impl<'b> NodeNav for UniformChunkNode<'b> {
                     x.byte_offset as usize,
                     x.schema.bytes_per_node as usize,
                 );
-                let info: ChunkInfo<'a> = ChunkInfo {
+                ChunkInfo {
                     schema: &x.schema,
                     data: trait_data,
-                };
-                ChunkIndexer::View(info)
+                }
             }
-            None => ChunkIndexer::Empty,
+            None => ChunkInfo {
+                schema: &EMPTY_SCHEMA,
+                data: slice_with_length(self.data(), 0, 0),
+            },
         }
     }
 }
@@ -196,42 +182,22 @@ impl<'a> NodeData for UniformChunkNode<'a> {
     }
 }
 
-// Views first item as chunk in as node
-impl HasId for UniformChunkNode<'_> {
-    fn get_index_in_chunk(&self) -> NodeChunkIndex {
-        NodeChunkIndex(self.offset as usize * self.view.schema.id_stride as usize)
-    }
-}
-
-pub enum ChunkIndexer<'a> {
-    View(ChunkInfo<'a>),
-    Empty,
-}
-
-impl<'b> Indexable for ChunkIndexer<'b> {
+impl<'b> Indexable for ChunkInfo<'b> {
     type Item<'a> = UniformChunkNode<'a>;
 
     fn index<'a>(&'a self, index: usize) -> UniformChunkNode<'a> {
-        match self {
-            ChunkIndexer::View(ref info) => {
-                if index < info.schema.node_count as usize {
-                    UniformChunkNode {
-                        view: info.clone(),
-                        offset: index as u32,
-                    }
-                } else {
-                    panic!()
-                }
+        if index < self.schema.node_count as usize {
+            UniformChunkNode {
+                view: self.clone(),
+                offset: index as u32,
             }
-            ChunkIndexer::Empty => panic!(),
+        } else {
+            panic!()
         }
     }
 
     fn len(&self) -> usize {
-        match self {
-            ChunkIndexer::View(view) => view.schema.node_count as usize,
-            ChunkIndexer::Empty => 0,
-        }
+       self.schema.node_count as usize
     }
 }
 
@@ -241,9 +207,10 @@ pub struct ChunkFieldsIterator<'a> {
 }
 
 impl<'a> Iterator for ChunkFieldsIterator<'a> {
-    type Item = (&'a Label, ChunkIndexer<'a>);
+    type Item = (&'a Label, ChunkInfo<'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
+        // let EMPTY_DATA: im_rc::vector::Vector<u8> = im_rc::vector::Vector::default();
         let (label, schema) = self.traits.next()?;
         let data = slice_with_length(
             self.data.clone(),
@@ -255,6 +222,16 @@ impl<'a> Iterator for ChunkFieldsIterator<'a> {
             data: data,
         };
 
-        Some((label, ChunkIndexer::View(info)))
+        Some((label, info))
     }
+}
+
+lazy_static! {
+    static ref EMPTY_SCHEMA: ChunkSchema = ChunkSchema {
+        def: Def(0),
+        node_count: 0,
+        bytes_per_node: 0,
+        payload_size: None,
+        traits: HashMap::default(),
+    };
 }

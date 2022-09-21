@@ -29,7 +29,6 @@ extern crate derive_more;
 extern crate im_rc;
 extern crate num_integer;
 
-mod chunk;
 mod example_node;
 mod tree;
 mod uniform_chunk;
