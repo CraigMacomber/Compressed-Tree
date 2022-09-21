@@ -1,5 +1,5 @@
 use super::{
-    tree::{Def, Label, Node, NodeNav, Indexable},
+    tree::{Def, Indexable, Label, Node},
     uniform_chunk::{ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk},
 };
 use rand::Rng;
@@ -76,15 +76,14 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
     }
 }
 
-pub fn walk_all<'a, T>(n: &'a T) -> usize where
-    T: Node,
-    T: NodeNav<TTraitChildren<'a>: Indexable<Item<'a>= T>>,
-    {
+
+pub fn walk_all<T: Node>(n: T) -> usize
+{
     let mut count = 1;
     for (_, t) in n.get_traits() {
         for c in 0..t.len() {
             let child = t.index(c);
-            count += walk_all(&child);
+            count += walk_all(child);
         }
     }
     count
@@ -92,12 +91,63 @@ pub fn walk_all<'a, T>(n: &'a T) -> usize where
 
 #[cfg(test)]
 mod tests {
+    use crate::forest::{example_node::BasicNode, tree::NodeNav};
+
     use super::*;
 
     #[test]
-    fn basic_nodes() {
-        let chunk = big_tree(1000);
-        // assert_eq!(walk_all(nav), size);
+    fn walk_chunk() {
+        let chunk: UniformChunk = big_tree(1000);
+        let view = chunk.view();
+
+        assert_eq!(walk_all(view), 4000);
+    }
+
+    #[test]
+    fn walk_basic() {
+        let n: &BasicNode = &BasicNode {
+            def: Def(0),
+            payload: None,
+            traits: HashMap::default(),
+        };
+
+        assert_eq!(walk_all(n), 1);
+    }
+
+    #[test]
+    fn basic_nodes3() {
+        let n: &BasicNode = &BasicNode {
+            def: Def(0),
+            payload: None,
+            traits: HashMap::default(),
+        };
+        let field = n.get_trait(Label(0));
+        for c in 0..field.len() {
+            let child = field.index(c);
+            let field2 = child.get_trait(Label(0));
+            for c in 0..field2.len() {
+                let child2 = field.index(c);
+            }
+        }
+    }
+
+    #[test]
+    fn basic_nodes4() {
+        let n: &BasicNode = &BasicNode {
+            def: Def(0),
+            payload: None,
+            traits: HashMap::default(),
+        };
+        for (l, field) in n.get_traits() {
+            for c in 0..field.len() {
+                let child = field.index(c);
+                for (l, field2) in n.get_traits() {
+                    for c in 0..field2.len() {
+                        let child2 = field.index(c);
+                    }
+                }
+            }
+        }
     }
 
     #[test]

@@ -117,10 +117,16 @@ impl UniformChunk {
     pub fn get_count(&self) -> usize {
         self.schema.schema.node_count as usize
     }
-    pub fn view(&self) -> ChunkInfo {
-        ChunkInfo {
-            schema: &self.schema.schema,
-            data: self.data.focus(),
+
+    /// View the first node in the chunk.
+    /// TODO: return an iterator over chunk instead
+    pub fn view(&self) -> UniformChunkNode {
+        UniformChunkNode {
+            view: ChunkInfo {
+                schema: &self.schema.schema,
+                data: self.data.focus(),
+            },
+            offset: 0,
         }
     }
 }
@@ -197,7 +203,7 @@ impl<'b> Indexable for ChunkInfo<'b> {
     }
 
     fn len(&self) -> usize {
-       self.schema.node_count as usize
+        self.schema.node_count as usize
     }
 }
 

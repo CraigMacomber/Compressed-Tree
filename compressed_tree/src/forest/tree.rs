@@ -12,42 +12,46 @@ pub struct Label(pub IdBase);
 /// Generic indexing trait.
 /// Based on https://www.reddit.com/r/rust/comments/qce86d/generalizing_with_gat_whats_going_to_happen_to/
 pub trait Indexable {
-	type Item<'a>: ?Sized where Self: 'a;
+    type Item<'a>: ?Sized
+    where
+        Self: 'a;
 
-	fn index<'a>( &'a self, index: usize ) -> Self::Item<'a>;
+    fn index<'a>(&'a self, index: usize) -> Self::Item<'a>;
     fn len(&self) -> usize;
 }
 
 impl<T> Indexable for Vec<T> {
-	type Item<'a> = &'a T where Self: 'a;
+    type Item<'a> = &'a T where Self: 'a;
 
-	fn index<'a>( &'a self, i: usize ) -> Self::Item<'a> {
-		std::ops::Index::<usize>::index( self, i )
-	}
+    fn index<'a>(&'a self, i: usize) -> Self::Item<'a> {
+        std::ops::Index::<usize>::index(self, i)
+    }
     fn len(&self) -> usize {
         Vec::len(self)
     }
 }
 
+impl<'b, T> Indexable for &'b Vec<T> {
+    type Item<'a> = &'a T where Self: 'a;
 
-impl<'a, T> Indexable for &'a Vec<T> {
-	type Item<'b> = &'a T where Self: 'b;
-
-	fn index<'b>( &'b self, i: usize ) -> Self::Item<'b> {
+    fn index<'a>(&'a self, i: usize) -> Self::Item<'a> {
         self.get(i).unwrap()
-	}
+    }
     fn len(&self) -> usize {
         Vec::len(self)
     }
 }
-
 
 /// Navigation part of Node
 pub trait NodeNav {
     /// For iterating children within a trait.
-    type TTraitChildren<'a>: Indexable where Self: 'a;
+    type TTraitChildren<'a>: Indexable<Item<'a> = Self>
+    where
+        Self: 'a;
     /// For iterating the set of trait labels for non-empty traits.
-    type TFields<'a>: Iterator<Item = (&'a Label, Self::TTraitChildren<'a>)> where Self: 'a;
+    type TFields<'a>: Iterator<Item = (&'a Label, Self::TTraitChildren<'a>)>
+    where
+        Self: 'a;
 
     fn get_traits<'a>(&'a self) -> Self::TFields<'a>;
     fn get_trait<'a>(&'a self, label: Label) -> Self::TTraitChildren<'a>;

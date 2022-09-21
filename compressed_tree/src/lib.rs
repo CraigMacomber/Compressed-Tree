@@ -1,5 +1,3 @@
-#![feature(associated_type_bounds)]
-
 #[macro_use]
 extern crate lazy_static;
 

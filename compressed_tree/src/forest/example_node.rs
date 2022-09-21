@@ -1,9 +1,7 @@
 //! Simple tree that owns its children.
 //! This serves as an example of the simplest way to implement Node, and is not actually used.
 
-use std::{
-    collections::{HashMap},
-};
+use std::collections::HashMap;
 
 use super::{
     tree::{Def, Label, NodeData, NodeNav},
@@ -16,9 +14,9 @@ pub struct BasicNode {
     pub traits: HashMap<Label, Vec<BasicNode>>, // TODO: Use hash map from im_rc
 }
 
-impl NodeNav for BasicNode {
-    type TTraitChildren<'a> = &'a Vec<BasicNode>;
-    type TFields<'a> = std::collections::hash_map::Iter<'a, Label, Vec<BasicNode>>;
+impl<'b> NodeNav for &'b BasicNode {
+    type TTraitChildren<'a> = &'a Vec<BasicNode> where Self: 'a;
+    type TFields<'a> = std::collections::hash_map::Iter<'a, Label, Vec<BasicNode>> where Self: 'a;
 
     fn get_traits<'a>(&'a self) -> Self::TFields<'a> {
         self.traits.iter()
@@ -29,7 +27,7 @@ impl NodeNav for BasicNode {
     }
 }
 
-impl NodeData for BasicNode {
+impl<'b> NodeData for &'b BasicNode {
     fn get_def(&self) -> Def {
         self.def
     }
