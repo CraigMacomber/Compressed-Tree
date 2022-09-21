@@ -43,18 +43,24 @@ impl<'b, T> Indexable for &'b Vec<T> {
 }
 
 /// Navigation part of Node
-pub trait NodeNav {
-    /// For iterating children within a trait.
-    type TTraitChildren<'a>: Indexable<Item<'a> = Self>
-    where
-        Self: 'a;
-    /// For iterating the set of trait labels for non-empty traits.
-    type TFields<'a>: Iterator<Item = (&'a Label, Self::TTraitChildren<'a>)>
+pub trait FieldMap {
+    /// For indexing children within a field.
+    /// TODO: constrain to `Indexable<Item<'a> = Self>` and fix lifetime issue with that.
+    type TField<'a>: Indexable
     where
         Self: 'a;
 
-    fn get_traits<'a>(&'a self) -> Self::TFields<'a>;
-    fn get_trait<'a>(&'a self, label: Label) -> Self::TTraitChildren<'a>;
+    fn get_field(&self, label: Label) -> Self::TField<'_>;
+}
+
+/// Navigation part of Node
+pub trait NodeNav: FieldMap {
+    /// For iterating the set of trait labels for non-empty traits.
+    type TFields<'a>: Iterator<Item = (&'a Label, <Self as FieldMap>::TField<'a>)>
+    where
+        Self: 'a;
+
+    fn get_fields(&self) -> Self::TFields<'_>;
 }
 
 /// Tree Node.

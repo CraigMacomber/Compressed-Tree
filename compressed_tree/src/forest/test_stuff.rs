@@ -1,6 +1,6 @@
 use super::{
-    tree::{Def, Indexable, Label, Node},
-    uniform_chunk::{ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk},
+    tree::{Def, Indexable, Label, Node, NodeNav},
+    uniform_chunk::{ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk, UniformChunkNode}, example_node::BasicNode,
 };
 use rand::Rng;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -9,8 +9,6 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
     let rng = RefCell::new(rand::thread_rng());
     let new_label = || -> Label { Label(rng.borrow_mut().gen()) };
     let new_def = || -> Def { Def(rng.borrow_mut().gen()) };
-    let def = new_def();
-    let label = new_label();
 
     // color channel schema
     let sub_schema = ChunkSchema {
@@ -80,7 +78,20 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
 pub fn walk_all<T: Node>(n: T) -> usize
 {
     let mut count = 1;
-    for (_, t) in n.get_traits() {
+    for (_, t) in n.get_fields() {
+        for c in 0..t.len() {
+            // let child = t.index(c);
+            todo!()
+            // count += walk_all(child);
+        }
+    }
+    count
+}
+
+pub fn walk_all_basic(n: &BasicNode) -> usize
+{
+    let mut count = 1;
+    for (_, t) in n.get_fields() {
         for c in 0..t.len() {
             let child = t.index(c);
             count += walk_all(child);
@@ -89,9 +100,23 @@ pub fn walk_all<T: Node>(n: T) -> usize
     count
 }
 
+
+pub fn walk_all_chunk(n: UniformChunkNode<'_>) -> usize
+{
+    let mut count = 1;
+    for (_, t) in n.get_fields() {
+        for c in 0..t.len() {
+            let child = t.index(c);
+            count += walk_all(child);
+        }
+    }
+    count
+}
+
+
 #[cfg(test)]
 mod tests {
-    use crate::forest::{example_node::BasicNode, tree::NodeNav};
+    use crate::forest::{example_node::BasicNode, tree::{NodeNav, FieldMap}};
 
     use super::*;
 
@@ -100,7 +125,8 @@ mod tests {
         let chunk: UniformChunk = big_tree(1000);
         let view = chunk.view();
 
-        assert_eq!(walk_all(view), 4000);
+        // TODO: walk more than first subtree in chunk
+        assert_eq!(walk_all_chunk(view), 5);
     }
 
     #[test]
@@ -121,10 +147,10 @@ mod tests {
             payload: None,
             traits: HashMap::default(),
         };
-        let field = n.get_trait(Label(0));
+        let field = n.get_field(Label(0));
         for c in 0..field.len() {
             let child = field.index(c);
-            let field2 = child.get_trait(Label(0));
+            let field2 = child.get_field(Label(0));
             for c in 0..field2.len() {
                 let child2 = field.index(c);
             }
@@ -138,10 +164,10 @@ mod tests {
             payload: None,
             traits: HashMap::default(),
         };
-        for (l, field) in n.get_traits() {
+        for (l, field) in n.get_fields() {
             for c in 0..field.len() {
                 let child = field.index(c);
-                for (l, field2) in n.get_traits() {
+                for (l, field2) in n.get_fields() {
                     for c in 0..field2.len() {
                         let child2 = field.index(c);
                     }

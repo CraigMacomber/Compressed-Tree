@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use super::{
-    tree::{Def, Label, NodeData, NodeNav},
+    tree::{Def, FieldMap, Label, NodeData, NodeNav},
     util::ImSlice,
 };
 
@@ -14,16 +14,19 @@ pub struct BasicNode {
     pub traits: HashMap<Label, Vec<BasicNode>>, // TODO: Use hash map from im_rc
 }
 
-impl<'b> NodeNav for &'b BasicNode {
-    type TTraitChildren<'a> = &'a Vec<BasicNode> where Self: 'a;
+impl FieldMap for &BasicNode {
+    type TField<'a> = &'a Vec<BasicNode> where Self: 'a;
+
+    fn get_field(&self, label: Label) -> Self::TField<'_> {
+        self.traits.get(&label).unwrap_or(EMPTY)
+    }
+}
+
+impl NodeNav for &BasicNode {
     type TFields<'a> = std::collections::hash_map::Iter<'a, Label, Vec<BasicNode>> where Self: 'a;
 
-    fn get_traits<'a>(&'a self) -> Self::TFields<'a> {
+    fn get_fields(&self) -> Self::TFields<'_> {
         self.traits.iter()
-    }
-
-    fn get_trait<'a>(&'a self, label: Label) -> Self::TTraitChildren<'a> {
-        self.traits.get(&label).unwrap_or(EMPTY)
     }
 }
 

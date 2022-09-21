@@ -1,7 +1,7 @@
 use std::{collections::HashMap, rc::Rc, usize};
 
 use super::{
-    tree::{Def, Indexable, Label, NodeData, NodeNav},
+    tree::{Def, Indexable, Label, NodeData, NodeNav, FieldMap},
     util::{slice_with_length, ImSlice},
 };
 
@@ -140,16 +140,10 @@ impl<'a> UniformChunkNode<'a> {
     }
 }
 
-impl<'b> NodeNav for UniformChunkNode<'b> {
-    type TTraitChildren<'a> = ChunkInfo<'a> where Self: 'a;
-    type TFields<'a> = ChunkFieldsIterator<'a> where Self: 'a;
+impl FieldMap for UniformChunkNode<'_> {
+    type TField<'a> = ChunkInfo<'a> where Self: 'a;
 
-    fn get_traits<'a>(&'a self) -> Self::TFields<'a> {
-        todo!()
-        // self.view.schema.traits.keys().cloned()
-    }
-
-    fn get_trait<'a>(&'a self, label: Label) -> Self::TTraitChildren<'a> {
+    fn get_field(&self, label: Label) -> Self::TField<'_> {
         match self.view.schema.traits.get(&label) {
             Some(x) => {
                 let node_data = self.data();
@@ -171,8 +165,16 @@ impl<'b> NodeNav for UniformChunkNode<'b> {
     }
 }
 
+impl NodeNav for UniformChunkNode<'_> {
+    type TFields<'a> = ChunkFieldsIterator<'a> where Self: 'a;
+
+    fn get_fields<'a>(&'a self) -> Self::TFields<'a> {
+        ChunkFieldsIterator{ data: self.data(), traits: self.view.schema.traits.iter()}
+    }
+}
+
 // Views first item as chunk in as node
-impl<'a> NodeData for UniformChunkNode<'a> {
+impl NodeData for UniformChunkNode<'_> {
     fn get_def(&self) -> Def {
         self.view.schema.def
     }
