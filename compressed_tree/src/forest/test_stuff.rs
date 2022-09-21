@@ -16,7 +16,7 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
         node_count: 1,
         bytes_per_node: 1,
         payload_size: Some(1),
-        traits: HashMap::default(),
+        fields: HashMap::default(),
     };
 
     // Color schema (rgba)
@@ -25,7 +25,7 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
         node_count: chunk_size as u32,
         bytes_per_node: 4,
         payload_size: None,
-        traits: vec![
+        fields: vec![
             (
                 new_label(),
                 OffsetSchema {
@@ -134,7 +134,7 @@ mod tests {
         let n: &BasicNode = &BasicNode {
             def: Def(0),
             payload: None,
-            traits: HashMap::default(),
+            fields: HashMap::default(),
         };
 
         assert_eq!(walk_all(n), 1);
@@ -145,7 +145,7 @@ mod tests {
         let n: &BasicNode = &BasicNode {
             def: Def(0),
             payload: None,
-            traits: HashMap::default(),
+            fields: HashMap::default(),
         };
         let field = n.get_field(Label(0));
         for c in 0..field.len() {
@@ -162,7 +162,7 @@ mod tests {
         let n: &BasicNode = &BasicNode {
             def: Def(0),
             payload: None,
-            traits: HashMap::default(),
+            fields: HashMap::default(),
         };
         for (l, field) in n.get_fields() {
             for c in 0..field.len() {

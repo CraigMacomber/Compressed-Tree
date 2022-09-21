@@ -11,14 +11,14 @@ use super::{
 pub struct BasicNode {
     pub def: Def,
     pub payload: Option<im_rc::Vector<u8>>,
-    pub traits: HashMap<Label, Vec<BasicNode>>, // TODO: Use hash map from im_rc
+    pub fields: HashMap<Label, Vec<BasicNode>>, // TODO: Use hash map from im_rc
 }
 
 impl FieldMap for &BasicNode {
     type TField<'a> = &'a Vec<BasicNode> where Self: 'a;
 
     fn get_field(&self, label: Label) -> Self::TField<'_> {
-        self.traits.get(&label).unwrap_or(EMPTY)
+        self.fields.get(&label).unwrap_or(EMPTY)
     }
 }
 
@@ -26,7 +26,7 @@ impl NodeNav for &BasicNode {
     type TFields<'a> = std::collections::hash_map::Iter<'a, Label, Vec<BasicNode>> where Self: 'a;
 
     fn get_fields(&self) -> Self::TFields<'_> {
-        self.traits.iter()
+        self.fields.iter()
     }
 }
 

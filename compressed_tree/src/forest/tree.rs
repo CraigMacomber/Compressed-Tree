@@ -55,7 +55,7 @@ pub trait FieldMap {
 
 /// Navigation part of Node
 pub trait NodeNav: FieldMap {
-    /// For iterating the set of trait labels for non-empty traits.
+    /// For iterating the set of field labels for non-empty fields.
     type TFields<'a>: Iterator<Item = (&'a Label, <Self as FieldMap>::TField<'a>)>
     where
         Self: 'a;

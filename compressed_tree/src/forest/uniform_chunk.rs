@@ -48,7 +48,7 @@ impl RootChunkSchema {
     pub fn new(schema: ChunkSchema) -> Self {
         fn add(s: &ChunkSchema, byte_offset: u32, parent: ParentInfo) {
             // TODO: compute any desired derived data from schema here.
-            for (label, sub_schema) in s.traits.iter() {
+            for (label, sub_schema) in s.fields.iter() {
                 for i in 0..sub_schema.schema.node_count {
                     add(
                         &sub_schema.schema,
@@ -82,14 +82,14 @@ pub struct ChunkSchema {
     pub node_count: u32,
     pub bytes_per_node: u32,
     pub payload_size: Option<u16>,
-    pub traits: std::collections::HashMap<Label, OffsetSchema, ahash::RandomState>,
+    pub fields: std::collections::HashMap<Label, OffsetSchema, ahash::RandomState>,
 }
 
 /// Offsets are for the first iteration (of a possible schema.node_count iterations)
-/// and are relative to the immediate parent (the node not the trait).
+/// and are relative to the immediate parent (the node not the field).
 /// Thus these offsets need to account for the parent's payload, the parent's id,
-/// and all traits which precede this one (including their repetitions via node_count).
-/// Note thats its allowed the layout in id space and byte space to differ, so which traits are preceding in each might not be the same.
+/// and all fields which precede this one (including their repetitions via node_count).
+/// Note thats its allowed the layout in id space and byte space to differ, so which fields are preceding in each might not be the same.
 /// Its also allowed to leave unused gaps in either id space or byte space.
 #[derive(Clone)]
 pub struct OffsetSchema {
@@ -144,17 +144,17 @@ impl FieldMap for UniformChunkNode<'_> {
     type TField<'a> = ChunkInfo<'a> where Self: 'a;
 
     fn get_field(&self, label: Label) -> Self::TField<'_> {
-        match self.view.schema.traits.get(&label) {
+        match self.view.schema.fields.get(&label) {
             Some(x) => {
                 let node_data = self.data();
-                let trait_data = slice_with_length(
+                let field_data = slice_with_length(
                     node_data,
                     x.byte_offset as usize,
                     x.schema.bytes_per_node as usize,
                 );
                 ChunkInfo {
                     schema: &x.schema,
-                    data: trait_data,
+                    data: field_data,
                 }
             }
             None => ChunkInfo {
@@ -169,7 +169,7 @@ impl NodeNav for UniformChunkNode<'_> {
     type TFields<'a> = ChunkFieldsIterator<'a> where Self: 'a;
 
     fn get_fields<'a>(&'a self) -> Self::TFields<'a> {
-        ChunkFieldsIterator{ data: self.data(), traits: self.view.schema.traits.iter()}
+        ChunkFieldsIterator{ data: self.data(), fields: self.view.schema.fields.iter()}
     }
 }
 
@@ -211,7 +211,7 @@ impl<'b> Indexable for ChunkInfo<'b> {
 
 pub struct ChunkFieldsIterator<'a> {
     data: ImSlice<'a>,
-    traits: std::collections::hash_map::Iter<'a, Label, OffsetSchema>,
+    fields: std::collections::hash_map::Iter<'a, Label, OffsetSchema>,
 }
 
 impl<'a> Iterator for ChunkFieldsIterator<'a> {
@@ -219,7 +219,7 @@ impl<'a> Iterator for ChunkFieldsIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // let EMPTY_DATA: im_rc::vector::Vector<u8> = im_rc::vector::Vector::default();
-        let (label, schema) = self.traits.next()?;
+        let (label, schema) = self.fields.next()?;
         let data = slice_with_length(
             self.data.clone(),
             schema.byte_offset as usize,
@@ -240,6 +240,6 @@ lazy_static! {
         node_count: 0,
         bytes_per_node: 0,
         payload_size: None,
-        traits: HashMap::default(),
+        fields: HashMap::default(),
     };
 }
