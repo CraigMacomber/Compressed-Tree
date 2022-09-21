@@ -8,6 +8,10 @@ Setup Rust, wasm-pack and NodeJS as directed in https://developer.mozilla.org/en
 
 Installing wasm-pack on windows may be easier via: https://rustwasm.github.io/wasm-pack/installer/
 
+This uses generic associated types which are stabilized in 1.65. As that version is not yet releases (as of this writing), you may need nightly rust:
+
+`rustup default nightly`
+
 run:
 
 1. `cargo test` to make sure rust is setup
@@ -56,3 +60,7 @@ npm ERR! 404 tarball, folder, http url, or git url.
 ```
 
 This means you need to `npm login`.
+
+# Misc
+
+This is based on the WASM packaging setup from [uuid-cluster](https://github.com/noencke/uuid-cluster) and the tree representation (minus node ids) from [sequence](https://github.com/CraigMacomber/sequence/).

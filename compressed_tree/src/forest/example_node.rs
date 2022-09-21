@@ -2,34 +2,30 @@
 //! This serves as an example of the simplest way to implement Node, and is not actually used.
 
 use std::{
-    collections::{hash_map::Keys, HashMap},
-    iter::Cloned,
-    slice,
+    collections::{HashMap},
 };
 
-use crate::forest::{
-    node_id::NodeId,
+use super::{
     tree::{Def, Label, NodeData, NodeNav},
     util::ImSlice,
 };
 
 pub struct BasicNode {
-    pub id: NodeId,
     pub def: Def,
     pub payload: Option<im_rc::Vector<u8>>,
     pub traits: HashMap<Label, Vec<BasicNode>>, // TODO: Use hash map from im_rc
 }
 
-impl<'a> NodeNav<&'a BasicNode> for &'a BasicNode {
-    type TTraitChildren = slice::Iter<'a, BasicNode>;
-    type TLabels = Cloned<Keys<'a, Label, Vec<BasicNode>>>;
+impl NodeNav for BasicNode {
+    type TTraitChildren<'a> = &'a Vec<BasicNode>;
+    type TFields<'a> = std::collections::hash_map::Iter<'a, Label, Vec<BasicNode>>;
 
-    fn get_traits(&self) -> Self::TLabels {
-        self.traits.keys().cloned()
+    fn get_traits<'a>(&'a self) -> Self::TFields<'a> {
+        self.traits.iter()
     }
 
-    fn get_trait(&self, label: Label) -> Self::TTraitChildren {
-        self.traits.get(&label).map_or(EMPTY, |x| &x[..]).iter()
+    fn get_trait<'a>(&'a self, label: Label) -> Self::TTraitChildren<'a> {
+        self.traits.get(&label).unwrap_or(EMPTY)
     }
 }
 
@@ -43,4 +39,4 @@ impl NodeData for BasicNode {
     }
 }
 
-const EMPTY: &[BasicNode] = &[];
+const EMPTY: &Vec<BasicNode> = &vec![];

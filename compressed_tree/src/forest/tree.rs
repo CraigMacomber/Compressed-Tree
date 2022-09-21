@@ -9,16 +9,48 @@ pub struct Def(pub IdBase);
 #[derive(Clone, PartialEq, Eq, Ord, Hash, PartialOrd, Copy, Debug)]
 pub struct Label(pub IdBase);
 
-/// Navigation part of Node
-pub trait NodeNav<TChild> {
-    /// For iterating children within a trait.
-    type TTraitChildren: Iterator<Item = TChild>;
-    /// For iterating the set of trait labels for non-empty traits..
-    type TLabels: Iterator<Item = Label>;
+/// Generic indexing trait.
+/// Based on https://www.reddit.com/r/rust/comments/qce86d/generalizing_with_gat_whats_going_to_happen_to/
+pub trait Indexable {
+	type Item<'a>: ?Sized where Self: 'a;
 
-    // TODO: Performance: walking traits could be faster if this returned a reference to the trait not just the labels (saves a map lookup)
-    fn get_traits(&self) -> Self::TLabels;
-    fn get_trait(&self, label: Label) -> Self::TTraitChildren;
+	fn index<'a>( &'a self, index: usize ) -> Self::Item<'a>;
+    fn len(&self) -> usize;
+}
+
+impl<T> Indexable for Vec<T> {
+	type Item<'a> = &'a T where Self: 'a;
+
+	fn index<'a>( &'a self, i: usize ) -> Self::Item<'a> {
+		std::ops::Index::<usize>::index( self, i )
+	}
+    fn len(&self) -> usize {
+        Vec::len(self)
+    }
+}
+
+
+impl<'a, T> Indexable for &'a Vec<T> {
+	type Item<'b> = &'a T where Self: 'b;
+
+	fn index<'b>( &'b self, i: usize ) -> Self::Item<'b> {
+        self.get(i).unwrap()
+	}
+    fn len(&self) -> usize {
+        Vec::len(self)
+    }
+}
+
+
+/// Navigation part of Node
+pub trait NodeNav {
+    /// For iterating children within a trait.
+    type TTraitChildren<'a>: Indexable where Self: 'a;
+    /// For iterating the set of trait labels for non-empty traits.
+    type TFields<'a>: Iterator<Item = (&'a Label, Self::TTraitChildren<'a>)> where Self: 'a;
+
+    fn get_traits<'a>(&'a self) -> Self::TFields<'a>;
+    fn get_trait<'a>(&'a self, label: Label) -> Self::TTraitChildren<'a>;
 }
 
 /// Tree Node.
@@ -28,9 +60,9 @@ pub trait NodeData {
     fn get_payload(&self) -> Option<ImSlice>;
 }
 
-pub trait Node<TChild = Self>: NodeNav<TChild> + NodeData {}
+pub trait Node: NodeNav + NodeData {}
 
-impl<TChild, TNode: NodeData + NodeNav<TChild>> Node<TChild> for TNode {}
+impl<TNode: NodeData + NodeNav> Node for TNode {}
 
 /// Information about the parent of a Node.
 #[derive(Clone)]

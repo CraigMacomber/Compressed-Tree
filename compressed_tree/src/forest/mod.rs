@@ -24,10 +24,6 @@ or to virtualize the logical tree, and load chunks of it into the Forest.
                 - Maybe use conservative updates (skip regenerating just to do deletes sometimes)
 */
 
-use chunk::ChunkId;
-use nav::Resolver;
-use node_id::HasId;
-use tree::ParentInfo;
 
 extern crate derive_more;
 extern crate im_rc;
@@ -35,105 +31,97 @@ extern crate num_integer;
 
 mod chunk;
 mod example_node;
-mod forest;
-mod indirect;
-mod indirect_nav;
-mod indirect_node;
-mod nav;
-mod node_id;
 mod tree;
 mod uniform_chunk;
 mod util;
 
-#[macro_use]
-pub mod enum_node;
 pub mod test_stuff;
 
-/// A forest (collection of trees) that that can optionally compression sections using [uniform_chunk]s.
-pub struct Forest {
-    forest: indirect_nav::Forest,
-    shapes: std::rc::Rc<ShapeLibrary>,
-}
+// /// A forest (collection of trees) that that can optionally compression sections using [uniform_chunk]s.
+// pub struct Forest {
+//     // forest: indirect_nav::Forest,
+//     shapes: std::rc::Rc<ShapeLibrary>,
+// }
 
-/// Unique identifier for a particular tree shape.
-struct ShapeId(u128);
+// /// Unique identifier for a particular tree shape.
+// struct ShapeId(u128);
 
-struct ShapeLibrary {
-    // TODO: could use something like  weak_table::WeakValueHashMap if we don't want this to grow forever.
-    map: std::collections::HashMap<ShapeId, uniform_chunk::RootChunkSchema>,
-}
+// struct ShapeLibrary {
+//     // TODO: could use something like  weak_table::WeakValueHashMap if we don't want this to grow forever.
+//     map: std::collections::HashMap<ShapeId, uniform_chunk::RootChunkSchema>,
+// }
 
 // Idea:
 // Add getter for forest/resolver (generic type) to nav/tree (specifically indirect nav).
 // Use this to add owning wrapper (that adds no fields) to allow editing by calling back into the forest (nav would have a mut forest in this case? Ref cell? COW ref cel?).
 // Maybe do copy on write instead?
 
-impl Forest {
-    pub fn get_tree(&self, id: node_id::NodeId) -> Option<indirect::enum_chunk::Node> {
-        self.forest.find_node(id)
-    }
+// impl Forest {
+//     pub fn get_tree(&self, id: node_id::NodeId) -> Option<indirect::enum_chunk::Node> {
+//         self.forest.find_node(id)
+//     }
 
-    pub fn insert_or_replace_node(&mut self, node: impl tree::Node<node_id::NodeId> + HasId) {
-        todo!()
-        // Split chunks, rechunk etc.
-    }
+//     pub fn insert_or_replace_node(&mut self, node: impl tree::Node<node_id::NodeId> + HasId) {
+//         todo!()
+//         // Split chunks, rechunk etc.
+//     }
 
-    pub fn delete_node(&mut self, id: node_id::NodeId) {
-        todo!()
-        // Split chunks, rechunk etc.
-        // Return success or error has parent
-    }
+//     pub fn delete_node(&mut self, id: node_id::NodeId) {
+//         todo!()
+//         // Split chunks, rechunk etc.
+//         // Return success or error has parent
+//     }
 
-    pub fn get_parent(
-        &self,
-        id: node_id::NodeId,
-    ) -> Option<Option<ParentInfo<indirect::enum_chunk::Node>>> {
-        let info = (&(self.forest)).get_parent(self.get_tree(id).as_ref()?);
-        Some(info)
-        // todo!("return better value for missing node vs root")
-    }
-}
+//     pub fn get_parent(
+//         &self,
+//         id: node_id::NodeId,
+//     ) -> Option<Option<ParentInfo<indirect::enum_chunk::Node>>> {
+//         let info = (&(self.forest)).get_parent(self.get_tree(id).as_ref()?);
+//         Some(info)
+//         // todo!("return better value for missing node vs root")
+//     }
+// }
 
-/// Non-minimal functionality
-impl Forest {
-    /// Inserts a tree, allocating it's ids arbitrarily
-    pub fn insert_tree(&mut self, tree: example_node::BasicNode) -> node_id::NodeId {
-        todo!()
-        // heuristically chunk
-    }
+// /// Non-minimal functionality
+// impl Forest {
+//     /// Inserts a tree, allocating it's ids arbitrarily
+//     pub fn insert_tree(&mut self, tree: example_node::BasicNode) -> node_id::NodeId {
+//         todo!()
+//         // heuristically chunk
+//     }
 
-    /// Insert a tree, keeping chunks as is.
-    pub fn insert_chunked() {
-        todo!()
-        // dedup shapes
-    }
+//     /// Insert a tree, keeping chunks as is.
+//     pub fn insert_chunked() {
+//         todo!()
+//         // dedup shapes
+//     }
 
-    pub fn set_value(&mut self, id: node_id::NodeId, value: &[u8]) {
-        todo!()
-    }
+//     pub fn set_value(&mut self, id: node_id::NodeId, value: &[u8]) {
+//         todo!()
+//     }
 
-    pub fn replace_node_chunked(&mut self, id: node_id::NodeId) {
-        todo!()
-    }
+//     pub fn replace_node_chunked(&mut self, id: node_id::NodeId) {
+//         todo!()
+//     }
 
-    pub fn update_chunk(
-        &mut self,
-        id: chunk::ChunkId,
-    ) -> im_rc::ordmap::Entry<chunk::ChunkId, indirect::enum_chunk::Chunk> {
-        self.forest.entry(id)
-    }
+//     pub fn update_chunk(
+//         &mut self,
+//         id: chunk::ChunkId,
+//     ) -> im_rc::ordmap::Entry<chunk::ChunkId, indirect::enum_chunk::Chunk> {
+//         self.forest.entry(id)
+//     }
 
-    pub fn delete_subtree(&mut self, id: node_id::NodeId) {
-        todo!()
-        // Return success or error has parent
-        // Split chunks, rechunk etc.
-    }
+//     pub fn delete_subtree(&mut self, id: node_id::NodeId) {
+//         todo!()
+//         // Return success or error has parent
+//         // Split chunks, rechunk etc.
+//     }
 
-    // /// Split chunks as needed so that that the contents the range are contained top level nodes of the returned chunks.
-    // pub fn isolate_range(&mut self, id: node_id::NodeId) -> impl Iterator<Item = ChunkId> {
-    //     unimplemented!()
-    // }
-}
+//     // /// Split chunks as needed so that that the contents the range are contained top level nodes of the returned chunks.
+//     // pub fn isolate_range(&mut self, id: node_id::NodeId) -> impl Iterator<Item = ChunkId> {
+//     //     unimplemented!()
+//     // }
+// }
 /*
 Works index based:
 Build

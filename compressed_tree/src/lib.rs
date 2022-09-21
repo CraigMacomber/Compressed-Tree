@@ -1,3 +1,5 @@
+#![feature(associated_type_bounds)]
+
 #[macro_use]
 extern crate macro_rules_attribute;
 
@@ -12,6 +14,8 @@ use web_sys::console;
 pub fn greet(name: &str) {
     console::log_1(&format!("Hello, {}!", name).into());
 }
+
+
 
 
 
