@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "serve": "webpack-dev-server",
+    "start": "webpack-dev-server",
     "webpack": "webpack",
     "test": "ts-mocha --project \"tsconfig-node.json\" ./src/test.ts",
     "build": "npm run build:wasm && npm i && npm run cleanup && tsc --project \"tsconfig-node.json\" && webpack && npm run cleanup",

@@ -1,9 +1,8 @@
 use crate::{FieldKey, TreeType};
 
 use super::{
-    example_node::BasicNode,
-    tree::{Indexable, Node, NodeNav},
-    uniform_chunk::{ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk, UniformChunkNode},
+    tree::{Indexable, Node},
+    uniform_chunk::{ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk},
 };
 use rand::Rng;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -88,34 +87,9 @@ pub fn walk_all<'a, T: Node<'a>>(n: T) -> usize {
     count
 }
 
-pub fn walk_all_basic(n: &BasicNode) -> usize {
-    let mut count = 1;
-    for (_, t) in n.get_fields() {
-        for c in 0..t.len() {
-            let child = t.index(c);
-            count += walk_all(child);
-        }
-    }
-    count
-}
-
-pub fn walk_all_chunk(n: UniformChunkNode<'_>) -> usize {
-    let mut count = 1;
-    for (_, t) in n.get_fields() {
-        for c in 0..t.len() {
-            let child = t.index(c);
-            count += walk_all(child);
-        }
-    }
-    count
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::{
-        forest::{example_node::BasicNode, tree::NodeNav},
-        FieldKey, TreeType,
-    };
+    use crate::{forest::example_node::BasicNode, TreeType};
 
     use super::*;
 
@@ -125,7 +99,7 @@ mod tests {
         let view = chunk.view();
 
         // TODO: walk more than first subtree in chunk
-        assert_eq!(walk_all_chunk(view), 5);
+        assert_eq!(walk_all(view), 5);
     }
 
     #[test]
@@ -137,42 +111,6 @@ mod tests {
         };
 
         assert_eq!(walk_all(n), 1);
-    }
-
-    #[test]
-    fn basic_nodes3() {
-        let n: &BasicNode = &BasicNode {
-            def: TreeType("".into()),
-            payload: None,
-            fields: HashMap::default(),
-        };
-        let field = n.get_field(FieldKey("".into()));
-        for c in 0..field.len() {
-            let child = field.index(c);
-            let field2 = child.get_field(FieldKey("".into()));
-            for c in 0..field2.len() {
-                let child2 = field.index(c);
-            }
-        }
-    }
-
-    #[test]
-    fn basic_nodes4() {
-        let n: &BasicNode = &BasicNode {
-            def: TreeType("".into()),
-            payload: None,
-            fields: HashMap::default(),
-        };
-        for (l, field) in n.get_fields() {
-            for c in 0..field.len() {
-                let child = field.index(c);
-                for (l, field2) in n.get_fields() {
-                    for c in 0..field2.len() {
-                        let child2 = field.index(c);
-                    }
-                }
-            }
-        }
     }
 
     #[test]

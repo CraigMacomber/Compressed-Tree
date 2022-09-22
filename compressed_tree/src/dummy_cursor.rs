@@ -17,7 +17,7 @@ impl NodesCursor for DummyNodes {
         1
     }
 
-    fn seek_nodes(self, offset: i32) -> EitherCursor<Self, Self::TFields> {
+    fn seek_nodes(self, _offset: i32) -> EitherCursor<Self, Self::TFields> {
         EitherCursor::Nodes(self)
     }
 
@@ -37,7 +37,7 @@ impl NodesCursor for DummyNodes {
         EitherCursor::Fields(DummyFields {})
     }
 
-    fn enter_field(self, key: FieldKey) -> EitherCursor<Self, Self::TFields> {
+    fn enter_field(self, _key: FieldKey) -> EitherCursor<Self, Self::TFields> {
         EitherCursor::Fields(DummyFields {})
     }
 
@@ -71,7 +71,7 @@ impl FieldsCursor for DummyFields {
         EitherCursor::Nodes(DummyNodes {})
     }
 
-    fn enter_node(self, child_index: u32) -> Self::TNodes {
+    fn enter_node(self, _child_index: u32) -> Self::TNodes {
         DummyNodes {}
     }
 }

@@ -14,8 +14,8 @@ run:
 1. `cd ./site`
 1. `npm run build` to wasm-pack for both bundler and nodejs, and compile site's test.ts file with tsc
 1. `npm run webpack` to test that webpack works with the wasm module and our typescript settings
-1. `npm run test:ts-node` run nodejs via ts-mocha
-1. `npm run serve` serve webpacked data with webpack dev server
+1. `npm run test` run nodejs via ts-mocha
+1. `npm start` serve webpacked data with webpack dev server
 
 To make this all work, we run wasm pack twice and combine the results into one package (workaround for not having https://github.com/rustwasm/wasm-pack/issues/313)
 This is done in `./site`'s build script.

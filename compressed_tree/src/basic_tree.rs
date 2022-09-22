@@ -88,7 +88,7 @@ impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
         // Value(self.current.get(self.index).map(|n| n.get_payload()))
     }
 
-    fn first_field(mut self) -> EitherCursor<Self, Self::TFields> {
+    fn first_field(self) -> EitherCursor<Self, Self::TFields> {
         let mut iter = self.current_node().get_fields();
         let first = iter.next();
         match first {
