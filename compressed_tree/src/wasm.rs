@@ -1,17 +1,12 @@
-use std::{
-     collections::HashMap, mem::replace, ops::DerefMut,
-};
+use std::{collections::HashMap, mem::replace, ops::DerefMut};
 
-use owning_ref::{OwningHandle};
+use owning_ref::OwningHandle;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    basic_tree::{
-        from_root,  BasicFieldsCursor,
-        BasicNodesCursor,
-    },
+    basic_tree::{from_root, BasicFieldsCursor, BasicNodesCursor},
     forest::example_node::BasicNode,
-    EitherCursor, NodesCursor, TreeType,
+    EitherCursor, FieldsCursor, NodesCursor, TreeType, FieldKey,
 };
 
 #[wasm_bindgen]
@@ -129,11 +124,11 @@ impl WasmCursor {
         match old {
             Cursor::Nodes(n) => match n.seek_nodes(offset) {
                 EitherCursor::Nodes(n) => {
-                    replace(cursor, Cursor::Nodes(n));
+                    *cursor = Cursor::Nodes(n);
                     true
                 }
                 EitherCursor::Fields(f) => {
-                    replace(cursor, Cursor::Fields(f));
+                    *cursor = Cursor::Fields(f);
                     false
                 }
             },
@@ -141,159 +136,193 @@ impl WasmCursor {
         }
     }
 
-    // #[wasm_bindgen(js_name = nextNode)]
-    // pub fn next_node(&mut self) -> bool {
-    //     self.seek_nodes(1)
-    // }
+    #[wasm_bindgen(js_name = nextNode)]
+    pub fn next_node(&mut self) -> bool {
+        self.seek_nodes(1)
+    }
 
-    // #[wasm_bindgen(js_name = exitNode)]
-    // pub fn exit_node(&mut self) {
-    //     let old = replace(&mut self.cursor, Cursor::Empty);
-    //     match old {
-    //         Cursor::Nodes(n) => {
-    //             self.cursor = Cursor::Fields(n.exit_node());
-    //         }
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = exitNode)]
+    pub fn exit_node(&mut self) {
+        let cursor = self.cursor_mut();
+        let old = replace(cursor, Cursor::Empty);
+        match old {
+            Cursor::Nodes(n) => {
+                *cursor = Cursor::Fields(n.exit_node());
+            }
+            _ => panic!(),
+        }
+    }
 
-    // #[wasm_bindgen(getter)]
-    // pub fn value(&self) -> Option<f64> {
-    //     match &self.cursor {
-    //         Cursor::Nodes(n) => n.value().0,
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(getter)]
+    pub fn value(&self) -> Option<f64> {
+        match &self.cursor() {
+            Cursor::Nodes(n) => n.value().0,
+            _ => panic!(),
+        }
+    }
 
-    // #[wasm_bindgen(js_name = firstField)]
-    // pub fn first_field(&mut self) -> bool {
-    //     let old = replace(&mut self.cursor, Cursor::Empty);
-    //     match old {
-    //         Cursor::Nodes(n) => match n.first_field() {
-    //             EitherCursor::Nodes(n) => {
-    //                 self.cursor = Cursor::Nodes(n);
-    //                 false
-    //             }
-    //             EitherCursor::Fields(f) => {
-    //                 self.cursor = Cursor::Fields(f);
-    //                 true
-    //             }
-    //         },
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = firstField)]
+    pub fn first_field(&mut self) -> bool {
+        let cursor = self.cursor_mut();
+        let old = replace(cursor, Cursor::Empty);
+        match old {
+            Cursor::Nodes(n) => match n.first_field() {
+                EitherCursor::Nodes(n) => {
+                    *cursor = Cursor::Nodes(n);
+                    false
+                }
+                EitherCursor::Fields(f) => {
+                    *cursor = Cursor::Fields(f);
+                    true
+                }
+            },
+            _ => panic!(),
+        }
+    }
 
-    // #[wasm_bindgen(js_name = enterField)]
-    // pub fn enter_field(&mut self, key: String) -> bool {
-    //     let old = replace(&mut self.cursor, Cursor::Empty);
-    //     match old {
-    //         Cursor::Nodes(n) => {
-    //             match n.enter_field(FieldKey(key)) {
-    //                 EitherCursor::Nodes(n) => {
-    //                     self.cursor = Cursor::Nodes(n);
-    //                     false
-    //                 },
-    //                 EitherCursor::Fields(f) => {
-    //                     self.cursor = Cursor::Fields(f);
-    //                     true
-    //                 },
-    //             }
-    //         }
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = enterField)]
+    pub fn enter_field(&mut self, key: String) -> bool {
+        let cursor = self.cursor_mut();
+        let old = replace(cursor, Cursor::Empty);
+        match old {
+            Cursor::Nodes(n) => {
+                match n.enter_field(FieldKey(key)) {
+                    EitherCursor::Nodes(n) => {
+                        *cursor = Cursor::Nodes(n);
+                        false
+                    },
+                    EitherCursor::Fields(f) => {
+                        *cursor = Cursor::Fields(f);
+                        true
+                    },
+                }
+            }
+            _ => panic!(),
+        }
+    }
 
-    // #[wasm_bindgen(getter, js_name = type)]
-    // pub fn node_type(&self) -> String {
-    //     match &self.cursor {
-    //         Cursor::Nodes(n) => n.node_type().0,
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(getter, js_name = type)]
+    pub fn node_type(&self) -> String {
+        match &self.cursor() {
+            Cursor::Nodes(n) => n.node_type().0,
+            _ => panic!(),
+        }
+    }
 
     // ///////////////////////////
 
-    // #[wasm_bindgen(js_name = nextField)]
-    // pub fn next_field(&mut self) -> bool {
-    //     let old = replace(&mut self.cursor, Cursor::Empty);
-    //     match old {
-    //         Cursor::Fields(f) => match f.next_field() {
-    //             EitherCursor::Nodes(n) => {
-    //                 self.cursor = Cursor::Nodes(n);
-    //                 false
-    //             }
-    //             EitherCursor::Fields(f) => {
-    //                 self.cursor = Cursor::Fields(f);
-    //                 true
-    //             }
-    //         },
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = nextField)]
+    pub fn next_field(&mut self) -> bool {
+        let cursor = self.cursor_mut();
+        let old = replace(cursor, Cursor::Empty);
+        match old {
+            Cursor::Fields(f) => match f.next_field() {
+                EitherCursor::Nodes(n) => {
+                    *cursor = Cursor::Nodes(n);
+                    false
+                }
+                EitherCursor::Fields(f) => {
+                    *cursor = Cursor::Fields(f);
+                    true
+                }
+            },
+            _ => panic!(),
+        }
+    }
 
-    // #[wasm_bindgen(js_name = exitField)]
-    // pub fn exit_field(&mut self) {
-    //     let old = replace(&mut self.cursor, Cursor::Empty);
-    //     match old {
-    //         Cursor::Fields(f) => {
-    //             self.cursor = Cursor::Nodes(f.exit_field());
-    //         }
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = exitField)]
+    pub fn exit_field(&mut self) {
+        let cursor = self.cursor_mut();
+        let old = replace(cursor, Cursor::Empty);
+        match old {
+            Cursor::Fields(f) => {
+                *cursor = Cursor::Nodes(f.exit_field());
+            }
+            _ => panic!(),
+        }
+    }
 
-    // #[wasm_bindgen(js_name = skipPendingFields)]
-    // pub fn skip_pending_fields(&mut self) -> bool {
-    //     let old = replace(&mut self.cursor, Cursor::Empty);
-    //     match old {
-    //         Cursor::Fields(f) => match f.skip_pending_fields() {
-    //             EitherCursor::Nodes(n) => {
-    //                 self.cursor = Cursor::Nodes(n);
-    //                 false
-    //             }
-    //             EitherCursor::Fields(f) => {
-    //                 self.cursor = Cursor::Fields(f);
-    //                 true
-    //             }
-    //         },
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = skipPendingFields)]
+    pub fn skip_pending_fields(&mut self) -> bool {
+        let cursor = self.cursor_mut();
+        let old = replace(cursor, Cursor::Empty);
+        match old {
+            Cursor::Fields(f) => match f.skip_pending_fields() {
+                EitherCursor::Nodes(n) => {
+                    *cursor = Cursor::Nodes(n);
+                    false
+                }
+                EitherCursor::Fields(f) => {
+                    *cursor = Cursor::Fields(f);
+                    true
+                }
+            },
+            _ => panic!(),
+        }
+    }
 
-    // #[wasm_bindgen(js_name = getFieldLength)]
-    // pub fn get_field_length(&self) -> i32 {
-    //     match &self.cursor {
-    //         Cursor::Fields(f) => f.get_field_length(),
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = getFieldLength)]
+    pub fn get_field_length(&self) -> i32 {
+        let cursor = self.cursor();
+        match cursor {
+            Cursor::Fields(f) => f.get_field_length(),
+            _ => panic!(),
+        }
+    }
 
-    // #[wasm_bindgen(js_name = firstNode)]
-    // pub fn first_node(&mut self) -> bool {
-    //     let old = replace(&mut self.cursor, Cursor::Empty);
-    //     match old {
-    //         Cursor::Fields(f) => match f.first_node() {
-    //             EitherCursor::Nodes(n) => {
-    //                 self.cursor = Cursor::Nodes(n);
-    //                 true
-    //             }
-    //             EitherCursor::Fields(f) => {
-    //                 self.cursor = Cursor::Fields(f);
-    //                 false
-    //             }
-    //         },
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = firstNode)]
+    pub fn first_node(&mut self) -> bool {
+        let cursor = self.cursor_mut();
+        let old = replace(cursor, Cursor::Empty);
+        match old {
+            Cursor::Fields(f) => match f.first_node() {
+                EitherCursor::Nodes(n) => {
+                    *cursor = Cursor::Nodes(n);
+                    true
+                }
+                EitherCursor::Fields(f) => {
+                    *cursor = Cursor::Fields(f);
+                    false
+                }
+            },
+            _ => panic!(),
+        }
+    }
 
-    // #[wasm_bindgen(js_name = enterNode)]
-    // pub fn enter_node(&mut self, child_index: i32) {
-    //     let old = replace(&mut self.cursor, Cursor::Empty);
-    //     match old {
-    //         Cursor::Fields(f) => {
-    //             self.cursor = Cursor::Nodes(f.enter_node(child_index));
-    //         }
-    //         _ => panic!(),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = enterNode)]
+    pub fn enter_node(&mut self, child_index: i32) {
+        let cursor = self.cursor_mut();
+        let old = replace(cursor, Cursor::Empty);
+        match old {
+            Cursor::Fields(f) => {
+                *cursor = Cursor::Nodes(f.enter_node(child_index));
+            }
+            _ => panic!(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn walk_all(n: &mut WasmCursor) -> usize {
+        let mut count = 1;
+        let mut in_fields = n.first_field();
+        while in_fields {
+            let mut in_nodes = n.first_node();
+            while in_nodes {
+                count += walk_all(n);
+                in_nodes = n.next_node();
+            }
+            in_fields = n.next_field();
+        }
+        count
+    }
+
+    #[test]
+    fn walk_wasm_cursor() {
+        let mut cursor = WasmCursor::new();
+        assert_eq!(walk_all(&mut cursor), 1);
+    }
 }
