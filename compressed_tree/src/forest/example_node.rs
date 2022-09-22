@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use crate::{TreeType, FieldKey};
+use crate::{FieldKey, TreeType};
 
 use super::{
     tree::{NodeData, NodeNav},

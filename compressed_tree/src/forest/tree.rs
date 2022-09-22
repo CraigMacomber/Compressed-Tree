@@ -2,10 +2,6 @@
 
 use crate::{forest::util::ImSlice, FieldKey, TreeType};
 
-
-
-
-
 /// Generic indexing trait.
 /// Based on https://www.reddit.com/r/rust/comments/qce86d/generalizing_with_gat_whats_going_to_happen_to/
 pub trait Indexable {

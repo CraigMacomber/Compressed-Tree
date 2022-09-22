@@ -112,7 +112,10 @@ impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
             nodes: self.current_node().get_field(key.clone()),
             current: BasicCursorLevel {
                 nodes: self.current,
-                fields: BasicCursorFieldsLevel { key: key.clone(), fields: None },
+                fields: BasicCursorFieldsLevel {
+                    key: key.clone(),
+                    fields: None,
+                },
             },
             parents: self.parents,
         })

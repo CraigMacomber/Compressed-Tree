@@ -1,6 +1,6 @@
 use std::{collections::HashMap, rc::Rc, usize};
 
-use crate::{TreeType, FieldKey};
+use crate::{FieldKey, TreeType};
 
 use super::{
     tree::{Indexable, NodeData, NodeNav},
