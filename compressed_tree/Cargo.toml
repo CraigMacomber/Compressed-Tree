@@ -2,7 +2,7 @@
 name = "compressed_tree"
 description = "Experimental compressed tree storage for FluidFramework's tree in WASM."
 readme = "../README.md"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 repository = "https://github.com/CraigMacomber/Compressed-Tree"
 license = "MIT"
@@ -43,3 +43,11 @@ features = [ "js" ]
 [[bench]]
 name = "benchmarks"
 harness = false
+
+[profile.release]
+lto = true
+# debug = true
+# opt-level = "z"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['-O4']

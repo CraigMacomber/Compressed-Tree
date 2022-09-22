@@ -73,7 +73,7 @@ impl WasmCursor {
     /// Create a new tree of test data and a cursor over it.
     /// TODO: Public API for creating trees.
     #[wasm_bindgen(constructor)]
-    pub fn new_from_test_data() -> Self {
+    pub fn new_from_test_data(fields: usize, per_field: usize) -> Self {
         fn test_node() -> BasicNode {
             let tree: BasicNode = BasicNode {
                 def: TreeType("".into()),
@@ -82,12 +82,11 @@ impl WasmCursor {
             };
             tree
         }
-        fn test_field(n: usize) -> Vec<BasicNode> {
-            (0..n).map(|_| test_node()).collect()
-        }
         let mut root = test_node();
-        root.fields.insert(FieldKey("A".into()), test_field(5));
-        root.fields.insert(FieldKey("B".into()), test_field(5));
+        for f in 0..fields {
+            let children = (0..per_field).map(|_| test_node()).collect();
+            root.fields.insert(FieldKey(f.to_string()), children);
+        }
         WasmCursor::new(vec![root])
     }
 
@@ -313,27 +312,31 @@ impl WasmCursor {
     }
 }
 
+/// Walks the subtree under the cursor's current node.
+///
+/// Returns the number of nodes in the subtree, including its root.
+#[wasm_bindgen(js_name = walkSubtree)]
+pub fn walk_subtree(n: &mut WasmCursor) -> usize {
+    let mut count = 1;
+    let mut in_fields = n.first_field();
+    while in_fields {
+        let mut in_nodes = n.first_node();
+        while in_nodes {
+            count += walk_subtree(n);
+            in_nodes = n.next_node();
+        }
+        in_fields = n.next_field();
+    }
+    count
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn walk_subtree(n: &mut WasmCursor) -> usize {
-        let mut count = 1;
-        let mut in_fields = n.first_field();
-        while in_fields {
-            let mut in_nodes = n.first_node();
-            while in_nodes {
-                count += walk_subtree(n);
-                in_nodes = n.next_node();
-            }
-            in_fields = n.next_field();
-        }
-        count
-    }
-
     #[test]
     fn walk_wasm_cursor() {
-        let mut cursor = WasmCursor::new_from_test_data();
-        assert_eq!(walk_subtree(&mut cursor), 11);
+        let mut cursor = WasmCursor::new_from_test_data(10, 10);
+        assert_eq!(walk_subtree(&mut cursor), 101);
     }
 }

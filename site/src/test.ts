@@ -1,15 +1,43 @@
-import { WasmCursor } from "compressed-tree";
+import { walkSubtree, WasmCursor } from "compressed-tree";
 
 export {};
 
 async function doLoop(): Promise<void> {
-  const cursor = new WasmCursor();
-  for (let i = 1; i <= 100; i++) {
-    const count = walkSubtree(cursor);
-    if (count !== 11) {
-      throw new Error();
+  const fields = 1000;
+  const nodes = 10;
+  const expected = nodes * fields + 1;
+  const cursor = new WasmCursor(fields, nodes);
+  const outerRuns = 5;
+  const runs = 1000;
+
+  console.log(`${fields} of ${nodes}: (Total Nodes: ${expected}) wasm walk`);
+  for (let x = 1; x <= outerRuns; x++) {
+    const t0 = performance.now();
+    for (let i = 1; i <= runs; i++) {
+      const count = walkSubtree(cursor);
+      if (count !== expected) {
+        throw new Error();
+      }
     }
+    const t1 = performance.now();
+    const perRun = (t1 - t0) / runs;
+    console.log(`${perRun} ms per run`);
   }
+
+  console.log(`${fields} of ${nodes}: (Total Nodes: ${expected}) JS walk`);
+  for (let x = 1; x <= outerRuns; x++) {
+    const t0 = performance.now();
+    for (let i = 1; i <= runs; i++) {
+      const count = walkSubtreeJS(cursor);
+      if (count !== expected) {
+        throw new Error();
+      }
+    }
+    const t1 = performance.now();
+    const perRun = (t1 - t0) / runs;
+    console.log(`${perRun} ms per run`);
+  }
+
   cursor.free();
   console.warn("done");
 }
@@ -18,10 +46,18 @@ if (typeof window !== "undefined") {
   (window as any)["doLoop"] = doLoop;
 } else {
   it("cursor lifecycle", () => {
-    new WasmCursor().free();
+    new WasmCursor(0, 0).free();
   });
   it("cursor use", () => {
-    const cursor = new WasmCursor();
+    const cursor = new WasmCursor(2, 5);
+    const count = walkSubtreeJS(cursor);
+    if (count !== 11) {
+      throw new Error();
+    }
+    cursor.free();
+  });
+  it("cursor use wasm", () => {
+    const cursor = new WasmCursor(2, 5);
     const count = walkSubtree(cursor);
     if (count !== 11) {
       throw new Error();
@@ -30,11 +66,11 @@ if (typeof window !== "undefined") {
   });
 }
 
-function walkSubtree(n: WasmCursor): number {
+function walkSubtreeJS(n: WasmCursor): number {
   let count = 1;
   for (let inFields = n.firstField(); inFields; inFields = n.nextField()) {
     for (let inNodes = n.firstNode(); inNodes; inNodes = n.nextNode()) {
-      count += walkSubtree(n);
+      count += walkSubtreeJS(n);
     }
   }
   return count;
