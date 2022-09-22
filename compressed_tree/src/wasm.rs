@@ -5,26 +5,26 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     basic_tree::{from_root, BasicFieldsCursor, BasicNodesCursor},
-    forest::example_node::BasicNode,
+    forest::{example_node::BasicNode, tree::Node},
     EitherCursor, FieldsCursor, NodesCursor, TreeType, FieldKey,
 };
 
 #[wasm_bindgen]
 pub struct WasmCursor {
-    data: Handle,
+    data: Handle<&'static BasicNode>,
 }
 
-struct CursorWrap<'a>(Cursor<'a>);
+struct CursorWrap<'a, T: Node<'a>>(Cursor<'a, T>);
 
-enum Cursor<'a> {
-    Nodes(BasicNodesCursor<'a>),
-    Fields(BasicFieldsCursor<'a>),
+enum Cursor<'a, T: Node<'a>> {
+    Nodes(BasicNodesCursor<'a, T>),
+    Fields(BasicFieldsCursor<'a, T>),
     Empty,
 }
 
-type Handle = OwningHandle<Box<Vec<BasicNode>>, CursorWrap<'static>>;
+type Handle<T> = OwningHandle<Box<Vec<BasicNode>>, CursorWrap<'static, T>>;
 
-fn owning_handle(n: BasicNode) -> Handle {
+fn owning_handle(n: BasicNode) -> Handle<&'static BasicNode> {
     let v = vec![n];
     let cell_ref = Box::new(v);
     let handle = OwningHandle::new_with_fn(cell_ref, |x| {
@@ -38,8 +38,8 @@ fn owning_handle(n: BasicNode) -> Handle {
 }
 
 // Not sure why OwningHandle requires this.
-impl<'a> core::ops::Deref for CursorWrap<'a> {
-    type Target = Cursor<'a>;
+impl<'a, T: Node<'a>> core::ops::Deref for CursorWrap<'a, T> {
+    type Target = Cursor<'a, T>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -47,18 +47,18 @@ impl<'a> core::ops::Deref for CursorWrap<'a> {
 }
 
 // Not sure why OwningHandle requires this.
-impl<'a> core::ops::DerefMut for CursorWrap<'a> {
+impl<'a, T: Node<'a>> core::ops::DerefMut for CursorWrap<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
 impl WasmCursor {
-    fn cursor_mut(&mut self) -> &mut Cursor<'static> {
+    fn cursor_mut(&mut self) -> &mut Cursor<'static, &'static BasicNode> {
         self.data.deref_mut()
     }
 
-    fn cursor(&self) -> &Cursor<'static> {
+    fn cursor(&self) -> &Cursor<'static, &'static BasicNode> {
         &self.data
     }
 }

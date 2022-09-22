@@ -1,58 +1,53 @@
-use owning_ref::{OwningRef, OwningHandle, ToHandle};
-
 use crate::{
-    forest::{
-        example_node::{BasicNode, FieldIterator},
-        tree::{FieldMap, Indexable, Label, NodeNav},
-    },
+    forest::tree::{FieldMap, Indexable, Label, Node, NodeNav},
     EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType, Value,
 };
 
-pub type BasicFields<'a> = FieldIterator<'a>;
-pub type BasicNodes<'a> = &'a [BasicNode];
+pub type BasicFields<'a, T> = <T as NodeNav<'a>>::TFields;
+pub type BasicNodes<'a, T> = <T as FieldMap<'a>>::TField;
 
-pub struct BasicFieldsCursor<'a> {
-    current: BasicCursorLevel<'a>,
+pub struct BasicFieldsCursor<'a, T: Node<'a>> {
+    current: BasicCursorLevel<'a, T>,
     /// Cache of Nodes at the current key.
-    nodes: BasicNodes<'a>,
-    parents: Vec<BasicCursorLevel<'a>>,
+    nodes: BasicNodes<'a, T>,
+    parents: Vec<BasicCursorLevel<'a, T>>,
 }
 
-struct BasicCursorLevel<'a> {
-    nodes: BasicCursorNodesLevel<'a>,
-    fields: BasicCursorFieldsLevel<'a>,
+struct BasicCursorLevel<'a, T: Node<'a>> {
+    nodes: BasicCursorNodesLevel<'a, T>,
+    fields: BasicCursorFieldsLevel<'a, T>,
 }
 
-struct BasicCursorNodesLevel<'a> {
+struct BasicCursorNodesLevel<'a, T: Node<'a>> {
     index: usize,
-    nodes: BasicNodes<'a>,
+    nodes: BasicNodes<'a, T>,
 }
 
-struct BasicCursorFieldsLevel<'a> {
+struct BasicCursorFieldsLevel<'a, T: Node<'a>> {
     key: &'a Label,
-    fields: BasicFields<'a>,
+    fields: BasicFields<'a, T>,
 }
 
-pub struct BasicNodesCursor<'a> {
-    current: BasicCursorNodesLevel<'a>,
-    parents: Vec<BasicCursorLevel<'a>>,
+pub struct BasicNodesCursor<'a, T: Node<'a>> {
+    current: BasicCursorNodesLevel<'a, T>,
+    parents: Vec<BasicCursorLevel<'a, T>>,
 }
 
-pub fn from_root<'a>(n: &'a [BasicNode]) -> BasicNodesCursor<'a> {
-    BasicNodesCursor{
+pub fn from_root<'a, T: Node<'a>>(n: BasicNodes<'a, T>) -> BasicNodesCursor<'a, T> {
+    BasicNodesCursor {
         parents: vec![],
-        current: BasicCursorNodesLevel{ index: 0, nodes: n },
+        current: BasicCursorNodesLevel { index: 0, nodes: n },
     }
 }
 
-impl<'a> BasicNodesCursor<'a> {
-    fn current_node(&self) -> &'a BasicNode {
+impl<'a, T: Node<'a>> BasicNodesCursor<'a, T> {
+    fn current_node(&self) -> T {
         self.current.nodes.index(self.current.index)
     }
 }
 
-impl<'a> NodesCursor for BasicNodesCursor<'a> {
-    type TFields = BasicFieldsCursor<'a>;
+impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
+    type TFields = BasicFieldsCursor<'a, T>;
 
     fn field_index(&self) -> u32 {
         self.current.index as u32
@@ -97,17 +92,14 @@ impl<'a> NodesCursor for BasicNodesCursor<'a> {
     }
 
     fn first_field(mut self) -> EitherCursor<Self, Self::TFields> {
-        let mut iter: FieldIterator<'a> = self.current_node().get_fields();
+        let mut iter: BasicFields<'a, T> = self.current_node().get_fields();
         let first = iter.next();
         match first {
             Some((key, nodes)) => EitherCursor::Fields(BasicFieldsCursor {
                 nodes,
                 current: BasicCursorLevel {
                     nodes: self.current,
-                    fields: BasicCursorFieldsLevel {
-                        key,
-                        fields: iter,
-                    },
+                    fields: BasicCursorFieldsLevel { key, fields: iter },
                 },
                 parents: self.parents,
             }),
@@ -125,14 +117,14 @@ impl<'a> NodesCursor for BasicNodesCursor<'a> {
     }
 
     fn node_type(&self) -> TreeType {
-        let def = self.current_node().def.clone();
+        let def = self.current_node().get_def().clone();
         todo!()
         // TreeType(def)
     }
 }
 
-impl<'a> FieldsCursor for BasicFieldsCursor<'a> {
-    type TNodes = BasicNodesCursor<'a>;
+impl<'a, T: Node<'a>> FieldsCursor for BasicFieldsCursor<'a, T> {
+    type TNodes = BasicNodesCursor<'a, T>;
 
     fn next_field(self) -> EitherCursor<Self::TNodes, Self> {
         EitherCursor::Nodes(BasicNodesCursor {
