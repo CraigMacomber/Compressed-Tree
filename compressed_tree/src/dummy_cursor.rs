@@ -63,7 +63,7 @@ impl FieldsCursor for DummyFields {
         EitherCursor::Fields(self)
     }
 
-    fn get_field_length(&self) -> i32 {
+    fn get_field_length(&self) -> u32 {
         1
     }
 
@@ -71,7 +71,7 @@ impl FieldsCursor for DummyFields {
         EitherCursor::Nodes(DummyNodes {})
     }
 
-    fn enter_node(self, child_index: i32) -> Self::TNodes {
+    fn enter_node(self, child_index: u32) -> Self::TNodes {
         DummyNodes {}
     }
 }

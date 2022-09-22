@@ -92,7 +92,7 @@ trait NodesCursor: Sized {
      * Navigate up to parent field.
      * Sets mode to `Fields`
      *
-     * Same as seek i32.POSITIVE_INFINITY, but only valid when `mode` is `Nodes`.
+     * Same as seek number.POSITIVE_INFINITY, but only valid when `mode` is `Nodes`.
      *
      * TODO: what to do if at root?
      * TODO: Maybe merge with upToNode to make a single "Up"?
@@ -146,7 +146,7 @@ trait FieldsCursor: Sized {
      * Order of fields is only guaranteed to be consistent thorough a single iteration.
      *
      * If skipPending, skip past fields which are currently pending.
-     * This can be used to skip to the end of a large i32 of consecutive pending fields.
+     * This can be used to skip to the end of a large number of consecutive pending fields.
      *
      * Allowed when `mode` is `Fields`.
      */
@@ -184,11 +184,11 @@ trait FieldsCursor: Sized {
     // fn getFieldKey() -> FieldKey;
 
     /**
-     * @returns the i32 of immediate children in the current field.
+     * @returns the number of immediate children in the current field.
      *
      * Allowed when `mode` is `Fields`, and not `pending`.
      */
-    fn get_field_length(&self) -> i32;
+    fn get_field_length(&self) -> u32;
 
     /**
      * Moves to the first node of the selected field, setting mode to `Nodes`.
@@ -205,7 +205,7 @@ trait FieldsCursor: Sized {
      * Allowed when `mode` is `Fields`, and not `pending`.
      * Sets mode to `Nodes`.
      */
-    fn enter_node(self, child_index: i32) -> Self::TNodes;
+    fn enter_node(self, child_index: u32) -> Self::TNodes;
 }
 
 enum EitherCursor<TNodes, TFields: FieldsCursor<TNodes = TNodes>> {

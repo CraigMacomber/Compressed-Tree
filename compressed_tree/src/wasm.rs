@@ -74,13 +74,21 @@ impl WasmCursor {
     /// TODO: Public API for creating trees.
     #[wasm_bindgen(constructor)]
     pub fn new_from_test_data() -> Self {
-        let tree: BasicNode = BasicNode {
-            def: TreeType("".into()),
-            payload: None,
-            fields: HashMap::default(),
-        };
-
-        WasmCursor::new(vec![tree])
+        fn test_node() -> BasicNode {
+            let tree: BasicNode = BasicNode {
+                def: TreeType("".into()),
+                payload: None,
+                fields: HashMap::default(),
+            };
+            tree
+        }
+        fn test_field(n: usize) -> Vec<BasicNode> {
+            (0..n).map(|_| test_node()).collect()
+        }
+        let mut root = test_node();
+        root.fields.insert(FieldKey("A".into()), test_field(5));
+        root.fields.insert(FieldKey("B".into()), test_field(5));
+        WasmCursor::new(vec![root])
     }
 
     #[wasm_bindgen(getter)]
@@ -265,7 +273,7 @@ impl WasmCursor {
     }
 
     #[wasm_bindgen(js_name = getFieldLength)]
-    pub fn get_field_length(&self) -> i32 {
+    pub fn get_field_length(&self) -> u32 {
         let cursor = self.cursor();
         match cursor {
             Cursor::Fields(f) => f.get_field_length(),
@@ -293,7 +301,7 @@ impl WasmCursor {
     }
 
     #[wasm_bindgen(js_name = enterNode)]
-    pub fn enter_node(&mut self, child_index: i32) {
+    pub fn enter_node(&mut self, child_index: u32) {
         let cursor = self.cursor_mut();
         let old = replace(cursor, Cursor::Empty);
         match old {
@@ -309,13 +317,13 @@ impl WasmCursor {
 mod tests {
     use super::*;
 
-    fn walk_all(n: &mut WasmCursor) -> usize {
+    fn walk_subtree(n: &mut WasmCursor) -> usize {
         let mut count = 1;
         let mut in_fields = n.first_field();
         while in_fields {
             let mut in_nodes = n.first_node();
             while in_nodes {
-                count += walk_all(n);
+                count += walk_subtree(n);
                 in_nodes = n.next_node();
             }
             in_fields = n.next_field();
@@ -326,6 +334,6 @@ mod tests {
     #[test]
     fn walk_wasm_cursor() {
         let mut cursor = WasmCursor::new_from_test_data();
-        assert_eq!(walk_all(&mut cursor), 1);
+        assert_eq!(walk_subtree(&mut cursor), 11);
     }
 }

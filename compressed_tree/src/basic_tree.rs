@@ -131,16 +131,24 @@ impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
 impl<'a, T: Node<'a>> FieldsCursor for BasicFieldsCursor<'a, T> {
     type TNodes = BasicNodesCursor<'a, T>;
 
-    fn next_field(self) -> EitherCursor<Self::TNodes, Self> {
-        EitherCursor::Nodes(BasicNodesCursor {
-            current: todo!(),
-            parents: todo!(),
-        })
+    fn next_field(mut self) -> EitherCursor<Self::TNodes, Self> {
+        let fields = &mut self.current.fields.fields;
+        match fields {
+            Some(f) => match f.next() {
+                Some((key, nodes)) => {
+                    self.current.fields.key = key.clone();
+                    self.nodes = nodes;
+                    EitherCursor::Fields(self)
+                },
+                None => EitherCursor::Nodes(self.exit_field()), // Was on last field.
+            }
+            None => EitherCursor::Nodes(self.exit_field()), // Used enter_field instead of iterating.
+        }
     }
 
     fn exit_field(self) -> Self::TNodes {
         BasicNodesCursor {
-            current: todo!(),
+            current: self.current.nodes,
             parents: self.parents,
         }
     }
@@ -149,21 +157,23 @@ impl<'a, T: Node<'a>> FieldsCursor for BasicFieldsCursor<'a, T> {
         EitherCursor::Fields(self)
     }
 
-    fn get_field_length(&self) -> i32 {
+    fn get_field_length(&self) -> u32 {
         1
     }
 
     fn first_node(self) -> EitherCursor<Self::TNodes, Self> {
-        EitherCursor::Nodes(BasicNodesCursor {
-            current: todo!(),
-            parents: todo!(),
-        })
+        if self.nodes.len() > 0 {
+            EitherCursor::Nodes(self.enter_node(0))
+        } else {
+            EitherCursor::Fields(self)
+        }
     }
 
-    fn enter_node(self, child_index: i32) -> Self::TNodes {
+    fn enter_node(mut self, child_index: u32) -> Self::TNodes {
+        self.parents.push(self.current);
         BasicNodesCursor {
-            current: todo!(),
-            parents: todo!(),
+            current: BasicCursorNodesLevel { index: child_index as usize, nodes: self.nodes },
+            parents: self.parents,
         }
     }
 }
