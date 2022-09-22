@@ -1,5 +1,7 @@
 use std::{collections::HashMap, rc::Rc, usize};
 
+use crate::TreeType;
+
 use super::{
     tree::{Def, Indexable, Label, NodeData, NodeNav, FieldMap},
     util::{slice_with_length, ImSlice},
@@ -54,7 +56,7 @@ impl RootChunkSchema {
                         &sub_schema.schema,
                         byte_offset + sub_schema.byte_offset + i * sub_schema.schema.bytes_per_node,
                         ParentInfo {
-                            parent: Some(*label),
+                            parent: Some(label.clone()), // TODO
                             index: i as usize,
                         },
                     )
@@ -131,6 +133,8 @@ impl UniformChunk {
     }
 }
 
+pub type ChunkTree<'a> = UniformChunkNode<'a>;
+
 impl<'a> UniformChunkNode<'a> {
     fn data(&self) -> ImSlice<'a> {
         let offset = self.offset as usize;
@@ -176,7 +180,7 @@ impl NodeNav for UniformChunkNode<'_> {
 // Views first item as chunk in as node
 impl NodeData for UniformChunkNode<'_> {
     fn get_def(&self) -> Def {
-        self.view.schema.def
+        self.view.schema.def.clone() // TODO
     }
 
     fn get_payload(&self) -> Option<ImSlice> {
@@ -236,7 +240,7 @@ impl<'a> Iterator for ChunkFieldsIterator<'a> {
 
 lazy_static! {
     static ref EMPTY_SCHEMA: ChunkSchema = ChunkSchema {
-        def: Def(0),
+        def: TreeType("".into()),
         node_count: 0,
         bytes_per_node: 0,
         payload_size: None,

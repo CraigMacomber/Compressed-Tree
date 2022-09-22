@@ -1,13 +1,12 @@
 //! Core types of the tree abstraction.
 
-use crate::forest::util::ImSlice;
+use std::slice;
 
-pub type IdBase = u128;
+use crate::{forest::util::ImSlice, FieldKey, TreeType};
 
-#[derive(Clone, PartialEq, Eq, Ord, Hash, PartialOrd, Copy)]
-pub struct Def(pub IdBase);
-#[derive(Clone, PartialEq, Eq, Ord, Hash, PartialOrd, Copy, Debug)]
-pub struct Label(pub IdBase);
+pub type Def = TreeType;
+
+pub type Label = FieldKey;
 
 /// Generic indexing trait.
 /// Based on https://www.reddit.com/r/rust/comments/qce86d/generalizing_with_gat_whats_going_to_happen_to/
@@ -31,14 +30,14 @@ impl<T> Indexable for Vec<T> {
     }
 }
 
-impl<'b, T> Indexable for &'b Vec<T> {
+impl<T> Indexable for &'_ [T] {
     type Item<'a> = &'a T where Self: 'a;
 
     fn index<'a>(&'a self, i: usize) -> Self::Item<'a> {
         self.get(i).unwrap()
     }
     fn len(&self) -> usize {
-        Vec::len(self)
+        (self as &'_ [T]).len()
     }
 }
 

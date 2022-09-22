@@ -29,10 +29,10 @@ extern crate derive_more;
 extern crate im_rc;
 extern crate num_integer;
 
-mod example_node;
-mod tree;
-mod uniform_chunk;
-mod util;
+pub mod example_node;
+pub mod tree;
+pub mod uniform_chunk;
+pub mod util;
 
 pub mod test_stuff;
 

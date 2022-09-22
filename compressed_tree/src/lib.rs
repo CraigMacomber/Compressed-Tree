@@ -27,7 +27,10 @@ mod tests {
 
 trait UpPath {}
 struct Value(Option<f64>); // TODO: more value types
+
+#[derive(Clone, PartialEq, Eq, Hash)]
 struct FieldKey(String);
+#[derive(Clone, PartialEq, Eq, Hash)]
 struct TreeType(String);
 
 trait NodesCursor: Sized {
@@ -52,7 +55,7 @@ trait NodesCursor: Sized {
      *
      * Only valid when `mode` is `Nodes`.
      */
-    fn field_index(&self) -> i32;
+    fn field_index(&self) -> u32;
 
     /**
      * Index (within its parent field) of the first node in the current chunk.
@@ -60,7 +63,7 @@ trait NodesCursor: Sized {
      *
      * Only valid when `mode` is `Nodes`.
      */
-    fn chunk_start(&self) -> i32;
+    fn chunk_start(&self) -> u32;
 
     /**
      * Length of current chunk.
@@ -73,7 +76,7 @@ trait NodesCursor: Sized {
      *
      * Only valid when `mode` is `Nodes`.
      */
-    fn chunk_length(&self) -> i32;
+    fn chunk_length(&self) -> u32;
 
     /**
      * Moves `offset` nodes in the field.
@@ -219,3 +222,4 @@ enum EitherCursor<TNodes, TFields: FieldsCursor<TNodes = TNodes>> {
 pub mod basic_tree;
 pub mod wasm;
 pub mod forest;
+pub mod dummy_cursor;

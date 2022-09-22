@@ -1,3 +1,5 @@
+use crate::{FieldKey, TreeType};
+
 use super::{
     tree::{Def, Indexable, Label, Node, NodeNav},
     uniform_chunk::{ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk, UniformChunkNode}, example_node::BasicNode,
@@ -7,8 +9,8 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 pub fn big_tree(chunk_size: usize) -> UniformChunk {
     let rng = RefCell::new(rand::thread_rng());
-    let new_label = || -> Label { Label(rng.borrow_mut().gen()) };
-    let new_def = || -> Def { Def(rng.borrow_mut().gen()) };
+    let new_label = || -> Label { FieldKey(rng.borrow_mut().gen::<u128>().to_string()) };
+    let new_def = || -> Def { TreeType(rng.borrow_mut().gen::<u128>().to_string()) };
 
     // color channel schema
     let sub_schema = ChunkSchema {
@@ -116,7 +118,7 @@ pub fn walk_all_chunk(n: UniformChunkNode<'_>) -> usize
 
 #[cfg(test)]
 mod tests {
-    use crate::forest::{example_node::BasicNode, tree::{NodeNav, FieldMap}};
+    use crate::{forest::{example_node::BasicNode, tree::{NodeNav, FieldMap}}, TreeType, FieldKey};
 
     use super::*;
 
@@ -132,7 +134,7 @@ mod tests {
     #[test]
     fn walk_basic() {
         let n: &BasicNode = &BasicNode {
-            def: Def(0),
+            def: TreeType("".into()),
             payload: None,
             fields: HashMap::default(),
         };
@@ -143,14 +145,14 @@ mod tests {
     #[test]
     fn basic_nodes3() {
         let n: &BasicNode = &BasicNode {
-            def: Def(0),
+            def: TreeType("".into()),
             payload: None,
             fields: HashMap::default(),
         };
-        let field = n.get_field(Label(0));
+        let field = n.get_field(FieldKey("".into()));
         for c in 0..field.len() {
             let child = field.index(c);
-            let field2 = child.get_field(Label(0));
+            let field2 = child.get_field(FieldKey("".into()));
             for c in 0..field2.len() {
                 let child2 = field.index(c);
             }
@@ -160,7 +162,7 @@ mod tests {
     #[test]
     fn basic_nodes4() {
         let n: &BasicNode = &BasicNode {
-            def: Def(0),
+            def: TreeType("".into()),
             payload: None,
             fields: HashMap::default(),
         };

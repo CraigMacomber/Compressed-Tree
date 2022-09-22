@@ -22,6 +22,7 @@ rand = "0.8.5"
 ahash = "0.7.6"
 derive_more = "0.99.17"
 lazy_static = "1.4"
+owning_ref = "0.4.1"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.0"
