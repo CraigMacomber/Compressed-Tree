@@ -4,9 +4,9 @@ use owning_ref::OwningHandle;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    basic_tree::{from_root, BasicFieldsCursor, BasicNodesCursor},
+    basic_tree::{BasicFieldsCursor, BasicNodesCursor},
     forest::{example_node::BasicNode, tree::Node},
-    EitherCursor, FieldsCursor, NodesCursor, TreeType, FieldKey,
+    EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType,
 };
 
 #[wasm_bindgen]
@@ -24,13 +24,12 @@ enum Cursor<'a, T: Node<'a>> {
 
 type Handle<T> = OwningHandle<Box<Vec<BasicNode>>, CursorWrap<'static, T>>;
 
-fn owning_handle(n: BasicNode) -> Handle<&'static BasicNode> {
-    let v = vec![n];
+fn owning_handle(v: Vec<BasicNode>) -> Handle<&'static BasicNode> {
     let cell_ref = Box::new(v);
     let handle = OwningHandle::new_with_fn(cell_ref, |x| {
         let x = unsafe { x.as_ref() }.unwrap();
         let y: &[BasicNode] = &x;
-        let root = from_root(y);
+        let root = BasicNodesCursor::new(y);
         let cursor = CursorWrap(Cursor::Nodes(root));
         cursor
     });
@@ -61,21 +60,27 @@ impl WasmCursor {
     fn cursor(&self) -> &Cursor<'static, &'static BasicNode> {
         &self.data
     }
+
+    fn new(v: Vec<BasicNode>) -> Self {
+        WasmCursor {
+            data: owning_handle(v),
+        }
+    }
 }
 
 #[wasm_bindgen]
 impl WasmCursor {
+    /// Create a new tree of test data and a cursor over it.
+    /// TODO: Public API for creating trees.
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
+    pub fn new_from_test_data() -> Self {
         let tree: BasicNode = BasicNode {
             def: TreeType("".into()),
             payload: None,
             fields: HashMap::default(),
         };
 
-        WasmCursor {
-            data: owning_handle(tree),
-        }
+        WasmCursor::new(vec![tree])
     }
 
     #[wasm_bindgen(getter)]
@@ -185,18 +190,16 @@ impl WasmCursor {
         let cursor = self.cursor_mut();
         let old = replace(cursor, Cursor::Empty);
         match old {
-            Cursor::Nodes(n) => {
-                match n.enter_field(FieldKey(key)) {
-                    EitherCursor::Nodes(n) => {
-                        *cursor = Cursor::Nodes(n);
-                        false
-                    },
-                    EitherCursor::Fields(f) => {
-                        *cursor = Cursor::Fields(f);
-                        true
-                    },
+            Cursor::Nodes(n) => match n.enter_field(FieldKey(key)) {
+                EitherCursor::Nodes(n) => {
+                    *cursor = Cursor::Nodes(n);
+                    false
                 }
-            }
+                EitherCursor::Fields(f) => {
+                    *cursor = Cursor::Fields(f);
+                    true
+                }
+            },
             _ => panic!(),
         }
     }
@@ -322,7 +325,7 @@ mod tests {
 
     #[test]
     fn walk_wasm_cursor() {
-        let mut cursor = WasmCursor::new();
+        let mut cursor = WasmCursor::new_from_test_data();
         assert_eq!(walk_all(&mut cursor), 1);
     }
 }

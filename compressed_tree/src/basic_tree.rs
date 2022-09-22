@@ -3,8 +3,8 @@ use crate::{
     EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType, Value,
 };
 
-pub type BasicFields<'a, T> = <T as NodeNav<'a>>::TFields;
-pub type BasicNodes<'a, T> = <T as FieldMap<'a>>::TField;
+type BasicFields<'a, T> = <T as NodeNav<'a>>::TFields;
+type BasicNodes<'a, T> = <T as FieldMap<'a>>::TField;
 
 pub struct BasicFieldsCursor<'a, T: Node<'a>> {
     current: BasicCursorLevel<'a, T>,
@@ -33,14 +33,14 @@ pub struct BasicNodesCursor<'a, T: Node<'a>> {
     parents: Vec<BasicCursorLevel<'a, T>>,
 }
 
-pub fn from_root<'a, T: Node<'a>>(n: BasicNodes<'a, T>) -> BasicNodesCursor<'a, T> {
-    BasicNodesCursor {
-        parents: vec![],
-        current: BasicCursorNodesLevel { index: 0, nodes: n },
-    }
-}
-
 impl<'a, T: Node<'a>> BasicNodesCursor<'a, T> {
+    pub fn new(n: BasicNodes<'a, T>) -> BasicNodesCursor<'a, T> {
+        BasicNodesCursor {
+            parents: vec![],
+            current: BasicCursorNodesLevel { index: 0, nodes: n },
+        }
+    }
+
     fn current_node(&self) -> T {
         self.current.nodes.index(self.current.index)
     }
