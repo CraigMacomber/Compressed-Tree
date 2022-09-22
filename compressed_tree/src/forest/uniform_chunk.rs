@@ -1,9 +1,9 @@
 use std::{collections::HashMap, rc::Rc, usize};
 
-use crate::TreeType;
+use crate::{TreeType, FieldKey};
 
 use super::{
-    tree::{Def, Indexable, Label, NodeData, NodeNav, FieldMap},
+    tree::{Indexable, NodeData, NodeNav},
     util::{slice_with_length, ImSlice},
 };
 
@@ -35,7 +35,7 @@ struct OffsetInfo {
 #[derive(Clone)]
 pub struct ParentInfo {
     /// None for top level nodes in chunk
-    pub parent: Option<Label>,
+    pub parent: Option<FieldKey>,
     pub index: usize,
 }
 
@@ -79,12 +79,12 @@ impl RootChunkSchema {
 
 #[derive(Clone)]
 pub struct ChunkSchema {
-    pub def: Def,
+    pub def: TreeType,
     /// number of nodes at this level
     pub node_count: u32,
     pub bytes_per_node: u32,
     pub payload_size: Option<u16>,
-    pub fields: std::collections::HashMap<Label, OffsetSchema, ahash::RandomState>,
+    pub fields: std::collections::HashMap<FieldKey, OffsetSchema, ahash::RandomState>,
 }
 
 /// Offsets are for the first iteration (of a possible schema.node_count iterations)
@@ -144,10 +144,11 @@ impl<'a> UniformChunkNode<'a> {
     }
 }
 
-impl<'a> FieldMap<'a> for UniformChunkNode<'a> {
+impl<'a> NodeNav<'a> for UniformChunkNode<'a> {
     type TField = ChunkInfo<'a>;
+    type TFields = ChunkFieldsIterator<'a>;
 
-    fn get_field(&self, label: Label) -> Self::TField {
+    fn get_field(&self, label: FieldKey) -> Self::TField {
         match self.view.schema.fields.get(&label) {
             Some(x) => {
                 let node_data = self.data();
@@ -167,19 +168,18 @@ impl<'a> FieldMap<'a> for UniformChunkNode<'a> {
             },
         }
     }
-}
-
-impl<'a> NodeNav<'a> for UniformChunkNode<'a> {
-    type TFields = ChunkFieldsIterator<'a>;
 
     fn get_fields(&self) -> Self::TFields {
-        ChunkFieldsIterator{ data: self.data(), fields: self.view.schema.fields.iter()}
+        ChunkFieldsIterator {
+            data: self.data(),
+            fields: self.view.schema.fields.iter(),
+        }
     }
 }
 
 // Views first item as chunk in as node
 impl NodeData for UniformChunkNode<'_> {
-    fn get_def(&self) -> Def {
+    fn get_def(&self) -> TreeType {
         self.view.schema.def.clone() // TODO
     }
 
@@ -215,11 +215,11 @@ impl<'a> Indexable for ChunkInfo<'a> {
 
 pub struct ChunkFieldsIterator<'a> {
     data: ImSlice<'a>,
-    fields: std::collections::hash_map::Iter<'a, Label, OffsetSchema>,
+    fields: std::collections::hash_map::Iter<'a, FieldKey, OffsetSchema>,
 }
 
 impl<'a> Iterator for ChunkFieldsIterator<'a> {
-    type Item = (&'a Label, ChunkInfo<'a>);
+    type Item = (&'a FieldKey, ChunkInfo<'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
         // let EMPTY_DATA: im_rc::vector::Vector<u8> = im_rc::vector::Vector::default();

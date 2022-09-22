@@ -2,9 +2,9 @@
 
 use crate::{forest::util::ImSlice, FieldKey, TreeType};
 
-pub type Def = TreeType;
 
-pub type Label = FieldKey;
+
+
 
 /// Generic indexing trait.
 /// Based on https://www.reddit.com/r/rust/comments/qce86d/generalizing_with_gat_whats_going_to_happen_to/
@@ -27,26 +27,21 @@ impl<'a, T> Indexable for &'a [T] {
 }
 
 /// Navigation part of Node
-pub trait FieldMap<'a> {
+pub trait NodeNav<'a> {
     /// For indexing children within a field.
-    /// TODO: constrain to `Indexable<Item<'a> = Self>` and fix lifetime issue with that.
     type TField: Indexable<Item = Self>;
 
-    fn get_field(&self, label: Label) -> Self::TField;
-}
-
-/// Navigation part of Node
-pub trait NodeNav<'a>: FieldMap<'a> {
     /// For iterating the set of field labels for non-empty fields.
-    type TFields: Iterator<Item = (&'a Label, <Self as FieldMap<'a>>::TField)>;
+    type TFields: Iterator<Item = (&'a FieldKey, Self::TField)>;
 
+    fn get_field(&self, label: FieldKey) -> Self::TField;
     fn get_fields(&self) -> Self::TFields;
 }
 
 /// Tree Node.
 /// Combines navigation with data (def and payload)
 pub trait NodeData {
-    fn get_def(&self) -> Def;
+    fn get_def(&self) -> TreeType;
     fn get_payload(&self) -> Option<ImSlice>;
 }
 
@@ -58,5 +53,5 @@ impl<'a, TNode: NodeData + NodeNav<'a>> Node<'a> for TNode {}
 #[derive(Clone)]
 pub struct ParentInfo<TNode> {
     pub node: TNode,
-    pub label: Label,
+    pub label: FieldKey,
 }

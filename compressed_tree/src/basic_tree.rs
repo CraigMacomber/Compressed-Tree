@@ -1,8 +1,7 @@
 use crate::{
-    forest::tree::{Indexable, Label, Node},
+    forest::tree::{Indexable, Node},
     EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType, Value,
 };
-
 
 pub struct BasicFieldsCursor<'a, T: Node<'a>> {
     current: BasicCursorLevel<'a, T>,
@@ -22,8 +21,8 @@ struct BasicCursorNodesLevel<'a, T: Node<'a>> {
 }
 
 struct BasicCursorFieldsLevel<'a, T: Node<'a>> {
-    key: &'a Label,
-    fields: T::TFields,
+    key: FieldKey, // TODO: reference to some centralized Key object
+    fields: Option<T::TFields>,
 }
 
 pub struct BasicNodesCursor<'a, T: Node<'a>> {
@@ -97,7 +96,10 @@ impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
                 nodes,
                 current: BasicCursorLevel {
                     nodes: self.current,
-                    fields: BasicCursorFieldsLevel { key, fields: iter },
+                    fields: BasicCursorFieldsLevel {
+                        key: key.clone(),
+                        fields: Some(iter),
+                    },
                 },
                 parents: self.parents,
             }),
@@ -106,10 +108,12 @@ impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
     }
 
     fn enter_field(self, key: FieldKey) -> EitherCursor<Self, Self::TFields> {
-        let label: Label = key;
         EitherCursor::Fields(BasicFieldsCursor {
-            nodes: self.current_node().get_field(label),
-            current: todo!(),
+            nodes: self.current_node().get_field(key.clone()),
+            current: BasicCursorLevel {
+                nodes: self.current,
+                fields: BasicCursorFieldsLevel { key: key.clone(), fields: None },
+            },
             parents: self.parents,
         })
     }

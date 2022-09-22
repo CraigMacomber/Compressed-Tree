@@ -24,7 +24,6 @@ or to virtualize the logical tree, and load chunks of it into the Forest.
                 - Maybe use conservative updates (skip regenerating just to do deletes sometimes)
 */
 
-
 extern crate derive_more;
 extern crate im_rc;
 extern crate num_integer;

@@ -1,4 +1,4 @@
-use crate::{NodesCursor, EitherCursor, Value, FieldKey, TreeType, FieldsCursor};
+use crate::{EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType, Value};
 
 pub struct DummyNodes {}
 
@@ -26,20 +26,19 @@ impl NodesCursor for DummyNodes {
     }
 
     fn exit_node(self) -> Self::TFields {
-        DummyFields{}
+        DummyFields {}
     }
-
 
     fn value(&self) -> Value {
         Value(Some(42f64))
     }
 
     fn first_field(self) -> EitherCursor<Self, Self::TFields> {
-        EitherCursor::Fields(DummyFields{})
+        EitherCursor::Fields(DummyFields {})
     }
 
     fn enter_field(self, key: FieldKey) -> EitherCursor<Self, Self::TFields> {
-        EitherCursor::Fields(DummyFields{})
+        EitherCursor::Fields(DummyFields {})
     }
 
     fn node_type(&self) -> TreeType {
@@ -53,14 +52,14 @@ impl FieldsCursor for DummyFields {
     type TNodes = DummyNodes;
 
     fn next_field(self) -> EitherCursor<Self::TNodes, Self> {
-        EitherCursor::Nodes(DummyNodes{})
+        EitherCursor::Nodes(DummyNodes {})
     }
 
     fn exit_field(self) -> Self::TNodes {
-        DummyNodes{}
+        DummyNodes {}
     }
 
-    fn skip_pending_fields(self) -> EitherCursor<Self::TNodes, Self>  {
+    fn skip_pending_fields(self) -> EitherCursor<Self::TNodes, Self> {
         EitherCursor::Fields(self)
     }
 
@@ -69,10 +68,10 @@ impl FieldsCursor for DummyFields {
     }
 
     fn first_node(self) -> EitherCursor<Self::TNodes, Self> {
-        EitherCursor::Nodes(DummyNodes{})
+        EitherCursor::Nodes(DummyNodes {})
     }
 
     fn enter_node(self, child_index: i32) -> Self::TNodes {
-        DummyNodes{}
+        DummyNodes {}
     }
 }

@@ -4,4 +4,3 @@
 fn minimal() {
     drop(Box::new(1));
 }
-

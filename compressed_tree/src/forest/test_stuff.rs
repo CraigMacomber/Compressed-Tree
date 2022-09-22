@@ -1,16 +1,17 @@
 use crate::{FieldKey, TreeType};
 
 use super::{
-    tree::{Def, Indexable, Label, Node, NodeNav},
-    uniform_chunk::{ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk, UniformChunkNode}, example_node::BasicNode,
+    example_node::BasicNode,
+    tree::{Indexable, Node, NodeNav},
+    uniform_chunk::{ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk, UniformChunkNode},
 };
 use rand::Rng;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 pub fn big_tree(chunk_size: usize) -> UniformChunk {
     let rng = RefCell::new(rand::thread_rng());
-    let new_label = || -> Label { FieldKey(rng.borrow_mut().gen::<u128>().to_string()) };
-    let new_def = || -> Def { TreeType(rng.borrow_mut().gen::<u128>().to_string()) };
+    let new_label = || -> FieldKey { FieldKey(rng.borrow_mut().gen::<u128>().to_string()) };
+    let new_def = || -> TreeType { TreeType(rng.borrow_mut().gen::<u128>().to_string()) };
 
     // color channel schema
     let sub_schema = ChunkSchema {
@@ -76,9 +77,7 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
     }
 }
 
-
-pub fn walk_all<'a, T: Node<'a>>(n: T) -> usize
-{
+pub fn walk_all<'a, T: Node<'a>>(n: T) -> usize {
     let mut count = 1;
     for (_, t) in n.get_fields() {
         for c in 0..t.len() {
@@ -89,8 +88,7 @@ pub fn walk_all<'a, T: Node<'a>>(n: T) -> usize
     count
 }
 
-pub fn walk_all_basic(n: &BasicNode) -> usize
-{
+pub fn walk_all_basic(n: &BasicNode) -> usize {
     let mut count = 1;
     for (_, t) in n.get_fields() {
         for c in 0..t.len() {
@@ -101,9 +99,7 @@ pub fn walk_all_basic(n: &BasicNode) -> usize
     count
 }
 
-
-pub fn walk_all_chunk(n: UniformChunkNode<'_>) -> usize
-{
+pub fn walk_all_chunk(n: UniformChunkNode<'_>) -> usize {
     let mut count = 1;
     for (_, t) in n.get_fields() {
         for c in 0..t.len() {
@@ -113,11 +109,13 @@ pub fn walk_all_chunk(n: UniformChunkNode<'_>) -> usize
     }
     count
 }
-
 
 #[cfg(test)]
 mod tests {
-    use crate::{forest::{example_node::BasicNode, tree::{NodeNav, FieldMap}}, TreeType, FieldKey};
+    use crate::{
+        forest::{example_node::BasicNode, tree::NodeNav},
+        FieldKey, TreeType,
+    };
 
     use super::*;
 

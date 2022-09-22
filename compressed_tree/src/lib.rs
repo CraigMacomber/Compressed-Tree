@@ -13,10 +13,6 @@ pub fn greet(name: &str) {
     console::log_1(&format!("Hello, {}!", name).into());
 }
 
-
-
-
-
 #[cfg(test)]
 mod tests {
     #[test]
@@ -212,14 +208,12 @@ trait FieldsCursor: Sized {
     fn enter_node(self, child_index: i32) -> Self::TNodes;
 }
 
-
-
 enum EitherCursor<TNodes, TFields: FieldsCursor<TNodes = TNodes>> {
     Nodes(TNodes),
     Fields(TFields),
 }
 
 pub mod basic_tree;
-pub mod wasm;
-pub mod forest;
 pub mod dummy_cursor;
+pub mod forest;
+pub mod wasm;
