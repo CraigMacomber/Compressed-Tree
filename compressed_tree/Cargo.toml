@@ -19,7 +19,7 @@ wasm-bindgen = "0.2"
 im-rc = "15.0.0"
 num-integer = "0.1.44"
 rand = "0.8.5"
-ahash = "0.7.6"
+ahash = "0.8.0"
 derive_more = "0.99.17"
 lazy_static = "1.4"
 owning_ref = "0.4.1"
@@ -34,6 +34,11 @@ criterion = "0.3.5"
 [dependencies.web-sys]
 version = "0.3"
 features = [ "console" ]
+
+[dependencies.getrandom]
+version = "0.2.7"
+features = [ "js" ]
+
 
 [[bench]]
 name = "benchmarks"

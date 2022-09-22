@@ -139,9 +139,9 @@ impl<'a, T: Node<'a>> FieldsCursor for BasicFieldsCursor<'a, T> {
                     self.current.fields.key = key.clone();
                     self.nodes = nodes;
                     EitherCursor::Fields(self)
-                },
+                }
                 None => EitherCursor::Nodes(self.exit_field()), // Was on last field.
-            }
+            },
             None => EitherCursor::Nodes(self.exit_field()), // Used enter_field instead of iterating.
         }
     }
@@ -172,7 +172,10 @@ impl<'a, T: Node<'a>> FieldsCursor for BasicFieldsCursor<'a, T> {
     fn enter_node(mut self, child_index: u32) -> Self::TNodes {
         self.parents.push(self.current);
         BasicNodesCursor {
-            current: BasicCursorNodesLevel { index: child_index as usize, nodes: self.nodes },
+            current: BasicCursorNodesLevel {
+                index: child_index as usize,
+                nodes: self.nodes,
+            },
             parents: self.parents,
         }
     }
