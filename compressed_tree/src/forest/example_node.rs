@@ -14,18 +14,18 @@ pub struct BasicNode {
     pub fields: HashMap<Label, Vec<BasicNode>>, // TODO: Use hash map from im_rc
 }
 
-impl FieldMap for &BasicNode {
-    type TField<'a> =  &'a [BasicNode] where Self: 'a;
+impl<'a> FieldMap<'a> for &'a BasicNode {
+    type TField =  &'a [BasicNode];
 
-    fn get_field(&self, label: Label) -> Self::TField<'_> {
+    fn get_field(&self, label: Label) -> Self::TField {
         self.fields.get(&label).unwrap_or(EMPTY)
     }
 }
 
-impl NodeNav for &BasicNode {
-    type TFields<'a> = FieldIterator<'a> where Self: 'a;
+impl<'a> NodeNav<'a> for &'a BasicNode {
+    type TFields = FieldIterator<'a>;
 
-    fn get_fields(&self) -> Self::TFields<'_> {
+    fn get_fields(&self) -> Self::TFields {
         FieldIterator{ data: self.fields.iter() }
     }
 }

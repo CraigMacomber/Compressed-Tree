@@ -77,14 +77,13 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
 }
 
 
-pub fn walk_all<T: Node>(n: T) -> usize
+pub fn walk_all<'a, T: Node<'a>>(n: T) -> usize
 {
     let mut count = 1;
     for (_, t) in n.get_fields() {
         for c in 0..t.len() {
-            // let child = t.index(c);
-            todo!()
-            // count += walk_all(child);
+            let child = t.index(c);
+            count += walk_all(child);
         }
     }
     count

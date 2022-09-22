@@ -1,4 +1,4 @@
-use owning_ref::OwningRef;
+use owning_ref::{OwningRef, OwningHandle, ToHandle};
 
 use crate::{
     forest::{
@@ -38,31 +38,15 @@ pub struct BasicNodesCursor<'a> {
     parents: Vec<BasicCursorLevel<'a>>,
 }
 
-pub struct BasicNodesCursor2 {
-    current: BasicCursorNodesLevel<'static>,
-    parents: Vec<BasicCursorLevel<'static>>,
-}
-
-// pub fn from_root(n: BasicNode) -> OwningRef<Vec<BasicNode>, BasicNodesCursor<'static>> {
-//     let v = vec![n];
-//     BasicNodesCursor{
-//         parents: vec![],
-//         current: BasicCursorNodesLevel{ index: 0, nodes: &v },
-//     }
-// }
-
-pub fn from_root(n: BasicNode) -> OwningRef<Vec<BasicNode>, BasicNodesCursor<'static>> {
-    let v = vec![n];
-    let or = OwningRef::new(v);
-    let or = or.map(|v| &BasicNodesCursor {
+pub fn from_root<'a>(n: &'a [BasicNode]) -> BasicNodesCursor<'a> {
+    BasicNodesCursor{
         parents: vec![],
-        current: BasicCursorNodesLevel { index: 0, nodes: v },
-    });
-    or
+        current: BasicCursorNodesLevel{ index: 0, nodes: n },
+    }
 }
 
 impl<'a> BasicNodesCursor<'a> {
-    fn current_node(&'a self) -> &'a BasicNode {
+    fn current_node(&self) -> &'a BasicNode {
         self.current.nodes.index(self.current.index)
     }
 }

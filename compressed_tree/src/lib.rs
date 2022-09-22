@@ -29,9 +29,9 @@ trait UpPath {}
 struct Value(Option<f64>); // TODO: more value types
 
 #[derive(Clone, PartialEq, Eq, Hash)]
-struct FieldKey(String);
+pub struct FieldKey(String);
 #[derive(Clone, PartialEq, Eq, Hash)]
-struct TreeType(String);
+pub struct TreeType(String);
 
 trait NodesCursor: Sized {
     type TFields: FieldsCursor<TNodes = Self>;

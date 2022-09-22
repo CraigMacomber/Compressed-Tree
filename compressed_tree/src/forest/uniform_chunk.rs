@@ -144,10 +144,10 @@ impl<'a> UniformChunkNode<'a> {
     }
 }
 
-impl FieldMap for UniformChunkNode<'_> {
-    type TField<'a> = ChunkInfo<'a> where Self: 'a;
+impl<'a> FieldMap<'a> for UniformChunkNode<'a> {
+    type TField = ChunkInfo<'a>;
 
-    fn get_field(&self, label: Label) -> Self::TField<'_> {
+    fn get_field(&self, label: Label) -> Self::TField {
         match self.view.schema.fields.get(&label) {
             Some(x) => {
                 let node_data = self.data();
@@ -169,10 +169,10 @@ impl FieldMap for UniformChunkNode<'_> {
     }
 }
 
-impl NodeNav for UniformChunkNode<'_> {
-    type TFields<'a> = ChunkFieldsIterator<'a> where Self: 'a;
+impl<'a> NodeNav<'a> for UniformChunkNode<'a> {
+    type TFields = ChunkFieldsIterator<'a>;
 
-    fn get_fields<'a>(&'a self) -> Self::TFields<'a> {
+    fn get_fields(&self) -> Self::TFields {
         ChunkFieldsIterator{ data: self.data(), fields: self.view.schema.fields.iter()}
     }
 }
@@ -194,10 +194,10 @@ impl NodeData for UniformChunkNode<'_> {
     }
 }
 
-impl<'b> Indexable for ChunkInfo<'b> {
-    type Item<'a> = UniformChunkNode<'a>;
+impl<'a> Indexable for ChunkInfo<'a> {
+    type Item = UniformChunkNode<'a>;
 
-    fn index<'a>(&'a self, index: usize) -> UniformChunkNode<'a> {
+    fn index(&self, index: usize) -> UniformChunkNode<'a> {
         if index < self.schema.node_count as usize {
             UniformChunkNode {
                 view: self.clone(),
