@@ -11,7 +11,7 @@ use super::{
 /// Owns the content. Compressed (one copy of schema, rest as blob)
 #[derive(Clone)]
 pub struct UniformChunk {
-    pub data: Box<im_rc::Vector<u8>>,
+    pub data: Vec<u8>,
     pub schema: Rc<RootChunkSchema>,
 }
 
@@ -126,7 +126,7 @@ impl UniformChunk {
         UniformChunkNode {
             view: ChunkInfo {
                 schema: &self.schema.schema,
-                data: self.data.focus(),
+                data: self.data.as_slice(),
             },
             offset: 0,
         }
@@ -138,7 +138,7 @@ impl<'a> UniformChunkNode<'a> {
         let offset = self.offset as usize;
         let stride = self.view.schema.bytes_per_node as usize;
         let start = offset * stride;
-        slice_with_length(self.view.data.clone(), start, stride)
+        slice_with_length(self.view.data, start, stride)
     }
 }
 

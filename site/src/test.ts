@@ -1,4 +1,4 @@
-import { walkSubtree, WasmCursor, walkSubtreeInternal, walkSubtreeInternal2 } from "compressed-tree";
+import { walkSubtree, WasmCursor, walkSubtreeInternal, walkSubtreeInternal2, walkSubtreeDepth } from "compressed-tree";
 
 export {};
 
@@ -12,10 +12,11 @@ async function doLoop(): Promise<void> {
   const expected = nodes * fields + 1;
   const cursor = new WasmCursor(fields, nodes);
   const outerRuns = 5;
-  const runs = 1000;
+  const runs = 200;
   const walkers: [string, (w: WasmCursor) => number][] = [
     ["wasm", walkSubtree],
     ["wasm internal cursor", walkSubtreeInternal],
+    ["wasm cursor depth 1", (t) => walkSubtreeDepth(t, 1)],
     ["wasm node", walkSubtreeInternal2],
     ["JS", walkSubtreeJS],
   ]

@@ -16,12 +16,12 @@ use crate::{
     EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType,
 };
 
-// type InnerNode<'a> = UniformChunkNode<'a>;
-// type Tree = UniformChunk;
-// const BUILD_TEST_TREE: fn(usize, usize) -> Tree = chunked_test_tree;
-type InnerNode<'a> = &'a BasicNode;
-type Tree = Vec<BasicNode>;
-const BUILD_TEST_TREE: fn(usize, usize) -> Tree = basic_test_tree;
+type InnerNode<'a> = UniformChunkNode<'a>;
+type Tree = UniformChunk;
+const BUILD_TEST_TREE: fn(usize, usize) -> Tree = chunked_test_tree;
+// type InnerNode<'a> = &'a BasicNode;
+// type Tree = Vec<BasicNode>;
+// const BUILD_TEST_TREE: fn(usize, usize) -> Tree = basic_test_tree;
 
 type StaticNode = InnerNode<'static>;
 type Nodes<'a> = <InnerNode<'a> as NodeNav<'a>>::TField;
@@ -45,8 +45,8 @@ fn owning_handle(v: Tree) -> Handle<StaticNode> {
     let cell_ref = Box::new(v);
     let handle = OwningHandle::new_with_fn(cell_ref, |x| {
         let x = unsafe { x.as_ref() }.unwrap();
-        let y: Nodes = &x;
-        // let y: Nodes = x.view().view;
+        // let y: Nodes = &x;
+        let y: Nodes = x.view().view;
         let root = GenericNodesCursor::new(y);
         let cursor = CursorWrap(Cursor::Nodes(root));
         cursor
@@ -132,12 +132,12 @@ fn chunked_test_tree(fields: usize, per_field: usize) -> UniformChunk {
 
     let chunk_schema = Rc::new(RootChunkSchema::new(root));
 
-    let data: im_rc::Vector<u8> = vec![].into();
+    let data: Vec<u8> = vec![];
     debug_assert_eq!(data.len(), 0);
 
     UniformChunk {
         schema: chunk_schema.clone(),
-        data: data.into(),
+        data,
     }
 }
 
@@ -413,6 +413,26 @@ pub fn walk_subtree(n: &mut WasmCursor) -> usize {
 }
 
 /// Walks the subtree under the cursor's current node.
+///
+/// Returns the number of nodes in the subtree, including its root.
+#[wasm_bindgen(js_name = walkSubtreeDepth)]
+pub fn walk_subtree_depth(n: &mut WasmCursor, depth: usize) -> usize {
+    let mut count = 1;
+    if depth > 0 {
+        let mut in_fields = n.first_field();
+        while in_fields {
+            let mut in_nodes = n.first_node();
+            while in_nodes {
+                count += walk_subtree_depth(n, depth - 1);
+                in_nodes = n.next_node();
+            }
+            in_fields = n.next_field();
+        }
+    }
+    count
+}
+
+/// Walks the subtree under the cursor's current node.
 /// Uses lower level API.
 ///
 /// TODO:
@@ -471,8 +491,8 @@ fn inner<'a, T: Node<'a>>(
 #[wasm_bindgen(js_name = walkSubtreeInternal2)]
 pub fn walk_subtree_internal2(n: &mut WasmCursor) -> usize {
     let tree = n.data.as_owner();
-    walk_all(&tree[0])
-    // walk_all(tree.view())
+    // walk_all(&tree[0])
+    walk_all(tree.view())
 }
 
 #[cfg(test)]

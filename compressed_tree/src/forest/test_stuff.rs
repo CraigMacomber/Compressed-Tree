@@ -63,7 +63,7 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
 
     let chunk_schema = Rc::new(RootChunkSchema::new(schema));
 
-    let data: im_rc::Vector<u8> = std::iter::repeat(&[1u8, 2, 3, 4])
+    let data: Vec<u8> = std::iter::repeat(&[1u8, 2, 3, 4])
         .take(chunk_size)
         .flat_map(|x| x.iter())
         .cloned()
@@ -72,7 +72,7 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
 
     UniformChunk {
         schema: chunk_schema.clone(),
-        data: data.into(),
+        data,
     }
 }
 

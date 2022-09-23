@@ -12,7 +12,7 @@ use super::{
 
 pub struct BasicNode {
     pub def: TreeType,
-    pub payload: Option<im_rc::Vector<u8>>,
+    pub payload: Option<Vec<u8>>,
     pub fields: HashMap<FieldKey, Vec<BasicNode>>, // TODO: Use hash map from im_rc
 }
 
@@ -39,7 +39,7 @@ impl<'b> NodeData for &'b BasicNode {
     }
 
     fn get_payload(&self) -> Option<ImSlice> {
-        self.payload.as_ref().map(|p| p.focus())
+        self.payload.as_ref().map(|p| p.as_slice())
     }
 }
 
