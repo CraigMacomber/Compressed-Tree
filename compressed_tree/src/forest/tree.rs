@@ -32,6 +32,9 @@ pub trait NodeNav<'a> {
 
     fn get_field(&self, label: FieldKey) -> Self::TField;
     fn get_fields(&self) -> Self::TFields;
+
+    // Used to optimize checking for fields.
+    fn is_leaf(&self) -> bool;
 }
 
 /// Tree Node.

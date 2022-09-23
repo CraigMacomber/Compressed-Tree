@@ -2,6 +2,10 @@ import { walkSubtree, WasmCursor, walkSubtreeInternal, walkSubtreeInternal2 } fr
 
 export {};
 
+function fail(message: string): never {
+  throw new Error(message);
+}
+
 async function doLoop(): Promise<void> {
   const fields = 1000;
   const nodes = 10;
@@ -16,8 +20,13 @@ async function doLoop(): Promise<void> {
     ["JS", walkSubtreeJS],
   ]
 
+  const logger = document.getElementById('log') ?? fail("no log");
+  function log(message: string): void {
+    logger.innerHTML += message + '<br />';
+  }
+
   for (const [name, walker] of walkers) {
-    console.log(`${fields} of ${nodes}: (Total Nodes: ${expected}) ${name} walk`);
+    log(`${fields} of ${nodes}: (Total Nodes: ${expected}) ${name} walk`);
     for (let x = 1; x <= outerRuns; x++) {
       const t0 = performance.now();
       for (let i = 1; i <= runs; i++) {
@@ -28,12 +37,14 @@ async function doLoop(): Promise<void> {
       }
       const t1 = performance.now();
       const perRun = (t1 - t0) / runs;
-      console.log(`${perRun} ms per run`);
+      log(`${perRun.toFixed(3)} ms per run`);
     }
+    log('');
+    await new Promise(r => setTimeout(r, 0));
   }
 
   cursor.free();
-  console.warn("done");
+  log("done");
 }
 
 if (typeof window !== "undefined") {

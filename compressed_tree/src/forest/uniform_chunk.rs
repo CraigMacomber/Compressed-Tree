@@ -173,6 +173,10 @@ impl<'a> NodeNav<'a> for UniformChunkNode<'a> {
             fields: self.view.schema.fields.iter(),
         }
     }
+
+    fn is_leaf(&self) -> bool {
+        self.view.schema.fields.len() == 0
+    }
 }
 
 // Views first item as chunk in as node

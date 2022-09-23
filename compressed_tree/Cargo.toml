@@ -44,10 +44,6 @@ features = [ "js" ]
 name = "benchmarks"
 harness = false
 
-[profile.release]
-lto = true
-# debug = true
-# opt-level = "z"
-
+# https://www.reddit.com/r/rust/comments/kjcrxu/is_rust_code_compiled_into_webassembly_just_that/
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-O4']
+wasm-opt = ["-O4", "--enable-mutable-globals"]

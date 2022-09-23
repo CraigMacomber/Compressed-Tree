@@ -210,7 +210,21 @@ impl WasmCursor {
 
     #[wasm_bindgen(js_name = nextNode)]
     pub fn next_node(&mut self) -> bool {
-        self.seek_nodes(1)
+        let cursor = self.cursor_mut();
+        let old = replace(cursor, Cursor::Empty);
+        match old {
+            Cursor::Nodes(n) => match n.next_node() {
+                EitherCursor::Nodes(n) => {
+                    *cursor = Cursor::Nodes(n);
+                    true
+                }
+                EitherCursor::Fields(f) => {
+                    *cursor = Cursor::Fields(f);
+                    false
+                }
+            },
+            _ => panic!(),
+        }
     }
 
     #[wasm_bindgen(js_name = exitNode)]
@@ -236,6 +250,14 @@ impl WasmCursor {
     #[wasm_bindgen(js_name = firstField)]
     pub fn first_field(&mut self) -> bool {
         let cursor = self.cursor_mut();
+        match cursor {
+            Cursor::Nodes(n) => {
+                if n.is_leaf() {
+                    return false;
+                }
+            }
+            _ => panic!(),
+        }
         let old = replace(cursor, Cursor::Empty);
         match old {
             Cursor::Nodes(n) => match n.first_field() {
@@ -393,6 +415,9 @@ pub fn walk_subtree(n: &mut WasmCursor) -> usize {
 /// Walks the subtree under the cursor's current node.
 /// Uses lower level API.
 ///
+/// TODO:
+/// For unknown reasons this is slower than the higher level API. Why?
+///
 /// Returns the number of nodes in the subtree, including its root.
 #[wasm_bindgen(js_name = walkSubtreeInternal)]
 pub fn walk_subtree_internal(n: &mut WasmCursor) -> usize {
@@ -402,42 +427,38 @@ pub fn walk_subtree_internal(n: &mut WasmCursor) -> usize {
         Cursor::Nodes(c) => c,
         _ => panic!(),
     };
-    let result = inner(cursor_inner);
-    *cursor = Cursor::Nodes(result.1);
-    result.0
+    let mut count = 0;
+    *cursor = Cursor::Nodes(inner(cursor_inner, &mut count));
+    count
 }
 
-fn inner<'a, T: Node<'a>>(c: GenericNodesCursor<'a, T>) -> (usize, GenericNodesCursor<'a, T>) {
-    let mut count = 1;
+fn inner<'a, T: Node<'a>>(
+    c: GenericNodesCursor<'a, T>,
+    count: &mut usize,
+) -> GenericNodesCursor<'a, T> {
+    *count += 1;
+    if c.is_leaf() {
+        return c;
+    }
     let mut in_fields = c.first_field();
     loop {
         match in_fields {
             EitherCursor::Nodes(n) => {
-                return (count, n);
+                return n;
             }
             EitherCursor::Fields(f) => {
-                let result = inner_field(f);
-                in_fields = result.1.next_field();
-                count += result.0;
-            }
-        }
-    }
-}
-
-fn inner_field<'a, T: Node<'a>>(
-    c: GenericFieldsCursor<'a, T>,
-) -> (usize, GenericFieldsCursor<'a, T>) {
-    let mut count = 0;
-    let mut in_nodes = c.first_node();
-    loop {
-        match in_nodes {
-            EitherCursor::Nodes(n) => {
-                let result = inner(n);
-                in_nodes = result.1.next_node();
-                count += result.0;
-            }
-            EitherCursor::Fields(f) => {
-                return (count, f);
+                let mut in_nodes = f.first_node();
+                loop {
+                    match in_nodes {
+                        EitherCursor::Nodes(n) => {
+                            in_nodes = inner(n, count).next_node();
+                        }
+                        EitherCursor::Fields(f) => {
+                            in_fields = f.next_field();
+                            break;
+                        }
+                    }
+                }
             }
         }
     }

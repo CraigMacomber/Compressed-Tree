@@ -28,6 +28,9 @@ impl<'a> NodeNav<'a> for &'a BasicNode {
             data: self.fields.iter(),
         }
     }
+    fn is_leaf(&self) -> bool {
+        self.fields.len() == 0
+    }
 }
 
 impl<'b> NodeData for &'b BasicNode {

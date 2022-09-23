@@ -43,6 +43,12 @@ impl<'a, T: Node<'a>> GenericNodesCursor<'a, T> {
     }
 }
 
+impl<'a, T: Node<'a>> GenericNodesCursor<'a, T> {
+    pub fn is_leaf(&self) -> bool {
+        self.current_node().is_leaf()
+    }
+}
+
 impl<'a, T: Node<'a>> NodesCursor for GenericNodesCursor<'a, T> {
     type TFields = GenericFieldsCursor<'a, T>;
 
@@ -69,8 +75,13 @@ impl<'a, T: Node<'a>> NodesCursor for GenericNodesCursor<'a, T> {
         }
     }
 
-    fn next_node(self) -> EitherCursor<Self, Self::TFields> {
-        self.seek_nodes(1)
+    fn next_node(mut self) -> EitherCursor<Self, Self::TFields> {
+        self.current.index += 1;
+        if self.current.index < self.current.nodes.len() {
+            EitherCursor::Nodes(self)
+        } else {
+            EitherCursor::Fields(self.exit_node())
+        }
     }
 
     fn exit_node(mut self) -> Self::TFields {
