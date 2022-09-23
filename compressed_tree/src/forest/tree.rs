@@ -12,10 +12,10 @@ pub trait Indexable {
 }
 
 impl<'a, T> Indexable for &'a [T] {
-    type Item = &'a T;
+    type Item = Option<&'a T>;
 
     fn index(&self, i: usize) -> Self::Item {
-        self.get(i).unwrap()
+        self.get(i)
     }
     fn len(&self) -> usize {
         (self as &'_ [T]).len()
@@ -23,9 +23,9 @@ impl<'a, T> Indexable for &'a [T] {
 }
 
 /// Navigation part of Node
-pub trait NodeNav<'a> {
+pub trait NodeNav<'a>: Sized {
     /// For indexing children within a field.
-    type TField: Indexable<Item = Self>;
+    type TField: Indexable<Item = Option<Self>>;
 
     /// For iterating the set of field labels for non-empty fields.
     type TFields: Iterator<Item = (&'a FieldKey, Self::TField)>;

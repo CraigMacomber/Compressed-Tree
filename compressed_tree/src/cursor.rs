@@ -39,7 +39,7 @@ impl<'a, T: Node<'a>> GenericNodesCursor<'a, T> {
     }
 
     fn current_node(&self) -> T {
-        self.current.nodes.index(self.current.index)
+        self.current.nodes.index(self.current.index).unwrap()
     }
 }
 

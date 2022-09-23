@@ -80,7 +80,7 @@ pub fn walk_all<'a, T: Node<'a>>(n: T) -> usize {
     let mut count = 1;
     for (_, t) in n.get_fields() {
         for c in 0..t.len() {
-            let child = t.index(c);
+            let child = t.index(c).unwrap();
             count += walk_all(child);
         }
     }

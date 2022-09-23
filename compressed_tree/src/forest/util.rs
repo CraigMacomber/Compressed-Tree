@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 pub type ImSlice<'a> = &'a [u8]; //im_rc::vector::Focus<'a, u8>;
 
 pub fn slice_with_length(
@@ -9,5 +7,3 @@ pub fn slice_with_length(
 ) -> ImSlice<'_> {
     &focus[offset..offset + length]
 }
-
-pub type ImHashMap<K, V> = HashMap<K, V, ahash::RandomState>;

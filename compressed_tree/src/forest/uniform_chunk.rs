@@ -197,16 +197,16 @@ impl NodeData for UniformChunkNode<'_> {
 }
 
 impl<'a> Indexable for ChunkInfo<'a> {
-    type Item = UniformChunkNode<'a>;
+    type Item = Option<UniformChunkNode<'a>>;
 
-    fn index(&self, index: usize) -> UniformChunkNode<'a> {
+    fn index(&self, index: usize) -> Self::Item {
         if index < self.schema.node_count as usize {
-            UniformChunkNode {
+            Some(UniformChunkNode {
                 view: self.clone(),
                 offset: index as u32,
-            }
+            })
         } else {
-            panic!()
+            None
         }
     }
 
