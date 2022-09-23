@@ -82,19 +82,28 @@ pub fn walk_all<'a, T: Node<'a>>(n: T) -> usize {
     count
 }
 
+pub fn walk_all_field<'a, T: Node<'a>>(t: T::TField) -> usize {
+    let mut count = 0;
+    for c in 0..t.len() {
+        let child = t.index(c).unwrap();
+        count += walk_all(child);
+    }
+    count
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{forest::example_node::BasicNode, TreeType};
+    use crate::{forest::{example_node::BasicNode, uniform_chunk::UniformChunkNode}, TreeType};
 
     use super::*;
 
     #[test]
     fn walk_chunk() {
-        let chunk: UniformChunk = big_tree(1000);
+        let chunk: UniformChunk = big_tree(1);
         let view = chunk.view();
 
         // TODO: walk more than first subtree in chunk
-        assert_eq!(walk_all(view), 5);
+        assert_eq!(walk_all_field::<UniformChunkNode>(view), 5);
     }
 
     #[test]

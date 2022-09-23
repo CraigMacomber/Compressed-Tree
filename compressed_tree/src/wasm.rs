@@ -7,7 +7,7 @@ use crate::{
     cursor::{GenericFieldsCursor, GenericNodesCursor},
     forest::{
         example_node::BasicNode,
-        test_stuff::walk_all,
+        test_stuff::{walk_all, walk_all_field},
         tree::{Node, NodeNav},
         uniform_chunk::{ChunkSchema, OffsetSchema, UniformChunk, UniformChunkNode},
     },
@@ -44,7 +44,7 @@ fn owning_handle(v: Tree) -> Handle<StaticNode> {
     let handle = OwningHandle::new_with_fn(cell_ref, |x| {
         let x = unsafe { x.as_ref() }.unwrap();
         // let y: Nodes = &x;
-        let y: Nodes = x.view().view;
+        let y: Nodes = x.view();
         let root = GenericNodesCursor::new(y);
         let cursor = CursorWrap(Cursor::Nodes(root));
         cursor
@@ -114,7 +114,7 @@ fn chunked_test_tree(fields: usize, per_field: usize) -> UniformChunk {
     // Root schema
     let mut root = ChunkSchema {
         def: TreeType("".into()),
-        node_count: (fields * per_field + 1) as u32,
+        node_count: 1,
         bytes_per_node: 0,
         payload_size: None,
         fields: HashMap::default(),
@@ -485,7 +485,7 @@ fn inner<'a, T: Node<'a>>(
 pub fn walk_subtree_internal2(n: &mut WasmCursor) -> usize {
     let tree = n.data.as_owner();
     // walk_all(&tree[0])
-    walk_all(tree.view())
+    walk_all_field::<InnerNode>(tree.view())
 }
 
 #[cfg(test)]

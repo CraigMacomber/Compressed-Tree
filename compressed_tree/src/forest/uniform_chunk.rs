@@ -74,13 +74,10 @@ impl UniformChunk {
 
     /// View the first node in the chunk.
     /// TODO: return an iterator over chunk instead
-    pub fn view(&self) -> UniformChunkNode {
-        UniformChunkNode {
-            view: ChunkInfo {
-                schema: &self.schema,
-                data: self.data.as_slice(),
-            },
-            offset: 0,
+    pub fn view(&self) -> ChunkInfo {
+        ChunkInfo {
+            schema: &self.schema,
+            data: self.data.as_slice(),
         }
     }
 }
