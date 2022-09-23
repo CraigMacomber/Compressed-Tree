@@ -22,6 +22,14 @@ impl<'a, T> Indexable for &'a [T] {
     }
 }
 
+pub trait Tree {
+    type TNode<'a>: Node<'a>
+    where
+        Self: 'a;
+
+    fn view(&self) -> <<Self as Tree>::TNode<'_> as NodeNav>::TField;
+}
+
 /// Navigation part of Node
 pub trait NodeNav<'a>: Sized {
     /// For indexing children within a field.

@@ -6,21 +6,21 @@ use wasm_bindgen::prelude::*;
 use crate::{
     cursor::{GenericFieldsCursor, GenericNodesCursor},
     forest::{
-        example_node::BasicNode,
+        example_node::{BasicNode, BasicTree},
         test_stuff::{walk_all, walk_all_field},
-        tree::{Node, NodeNav},
+        tree::{self, Node, NodeNav, Tree},
         uniform_chunk::{ChunkSchema, OffsetSchema, UniformChunk, UniformChunkNode},
     },
     EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType,
 };
 
-type InnerNode<'a> = UniformChunkNode<'a>;
-type Tree = UniformChunk;
-const BUILD_TEST_TREE: fn(usize, usize) -> Tree = chunked_test_tree;
-// type InnerNode<'a> = &'a BasicNode;
-// type Tree = Vec<BasicNode>;
-// const BUILD_TEST_TREE: fn(usize, usize) -> Tree = basic_test_tree;
+type TTree = UniformChunk;
+const BUILD_TEST_TREE: fn(usize, usize) -> TTree = chunked_test_tree;
 
+// type TTree = BasicTree;
+// const BUILD_TEST_TREE: fn(usize, usize) -> TTree = basic_test_tree;
+
+type InnerNode<'a> = <TTree as tree::Tree>::TNode<'a>;
 type StaticNode = InnerNode<'static>;
 type Nodes<'a> = <InnerNode<'a> as NodeNav<'a>>::TField;
 
@@ -37,13 +37,12 @@ enum Cursor<'a, T: Node<'a>> {
     Empty,
 }
 
-type Handle<T> = OwningHandle<Box<Tree>, CursorWrap<'static, T>>;
+type Handle<T> = OwningHandle<Box<TTree>, CursorWrap<'static, T>>;
 
-fn owning_handle(v: Tree) -> Handle<StaticNode> {
+fn owning_handle(v: TTree) -> Handle<StaticNode> {
     let cell_ref = Box::new(v);
     let handle = OwningHandle::new_with_fn(cell_ref, |x| {
         let x = unsafe { x.as_ref() }.unwrap();
-        // let y: Nodes = &x;
         let y: Nodes = x.view();
         let root = GenericNodesCursor::new(y);
         let cursor = CursorWrap(Cursor::Nodes(root));
@@ -77,14 +76,14 @@ impl WasmCursor {
         &self.data
     }
 
-    fn new(v: Tree) -> Self {
+    fn new(v: TTree) -> Self {
         WasmCursor {
             data: owning_handle(v),
         }
     }
 }
 
-fn basic_test_tree(fields: usize, per_field: usize) -> Vec<BasicNode> {
+fn basic_test_tree(fields: usize, per_field: usize) -> BasicTree {
     fn test_node() -> BasicNode {
         let tree: BasicNode = BasicNode {
             def: TreeType("".into()),
@@ -98,7 +97,7 @@ fn basic_test_tree(fields: usize, per_field: usize) -> Vec<BasicNode> {
         let children = (0..per_field).map(|_| test_node()).collect();
         root.fields.insert(FieldKey(f.to_string()), children);
     }
-    vec![root]
+    BasicTree(vec![root])
 }
 
 fn chunked_test_tree(fields: usize, per_field: usize) -> UniformChunk {
@@ -483,8 +482,7 @@ fn inner<'a, T: Node<'a>>(
 /// Returns the number of nodes in the tree, including its root.
 #[wasm_bindgen(js_name = walkSubtreeInternal2)]
 pub fn walk_subtree_internal2(n: &mut WasmCursor) -> usize {
-    let tree = n.data.as_owner();
-    // walk_all(&tree[0])
+    let tree = &**n.data.as_owner();
     walk_all_field::<InnerNode>(tree.view())
 }
 

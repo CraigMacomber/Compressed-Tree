@@ -93,7 +93,10 @@ pub fn walk_all_field<'a, T: Node<'a>>(t: T::TField) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use crate::{forest::{example_node::BasicNode, uniform_chunk::UniformChunkNode}, TreeType};
+    use crate::{
+        forest::{example_node::BasicNode, tree::Tree, uniform_chunk::UniformChunkNode},
+        TreeType,
+    };
 
     use super::*;
 

@@ -3,7 +3,7 @@ use std::{collections::HashMap, rc::Rc, usize};
 use crate::{FieldKey, TreeType};
 
 use super::{
-    tree::{Indexable, NodeData, NodeNav},
+    tree::{Indexable, NodeData, NodeNav, Tree},
     util::{slice_with_length, ImSlice},
 };
 
@@ -71,10 +71,12 @@ impl UniformChunk {
     pub fn get_count(&self) -> usize {
         self.schema.node_count as usize
     }
+}
 
-    /// View the first node in the chunk.
-    /// TODO: return an iterator over chunk instead
-    pub fn view(&self) -> ChunkInfo {
+impl Tree for UniformChunk {
+    type TNode<'a> = UniformChunkNode<'a>;
+
+    fn view(&self) -> ChunkInfo {
         ChunkInfo {
             schema: &self.schema,
             data: self.data.as_slice(),

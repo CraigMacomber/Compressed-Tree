@@ -6,9 +6,19 @@ use std::collections::HashMap;
 use crate::{FieldKey, TreeType};
 
 use super::{
-    tree::{NodeData, NodeNav},
+    tree::{NodeData, NodeNav, Tree},
     util::ImSlice,
 };
+
+pub struct BasicTree(pub Vec<BasicNode>);
+
+impl Tree for BasicTree {
+    type TNode<'a> = &'a BasicNode;
+
+    fn view(&self) -> &[BasicNode] {
+        &self.0
+    }
+}
 
 pub struct BasicNode {
     pub def: TreeType,
@@ -44,8 +54,6 @@ impl<'b> NodeData for &'b BasicNode {
 }
 
 const EMPTY: &Vec<BasicNode> = &vec![];
-
-pub type BasicTree<'a> = &'a BasicNode;
 
 pub struct FieldIterator<'a> {
     data: std::collections::hash_map::Iter<'a, FieldKey, Vec<BasicNode>>,
