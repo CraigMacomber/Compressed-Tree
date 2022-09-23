@@ -11,69 +11,13 @@ use super::{
 /// Owns the content. Compressed (one copy of schema, rest as blob)
 #[derive(Clone)]
 pub struct UniformChunk {
-    pub data: Vec<u8>,
-    pub schema: Rc<RootChunkSchema>,
+    data: Vec<u8>,
+    schema: Rc<ChunkSchema>,
 }
 
 impl PartialEq for UniformChunk {
     fn eq(&self, other: &Self) -> bool {
         Rc::ptr_eq(&self.schema, &other.schema) & self.data.eq(&other.data)
-    }
-}
-
-pub struct RootChunkSchema {
-    pub schema: ChunkSchema,
-}
-
-#[derive(Clone)]
-struct OffsetInfo {
-    byte_offset: u32,
-    schema: ChunkSchema,
-    parent: ParentInfo,
-}
-
-#[derive(Clone)]
-pub struct ParentInfo {
-    /// None for top level nodes in chunk
-    pub parent: Option<FieldKey>,
-    pub index: usize,
-}
-
-#[derive(Clone)]
-pub struct OffsetInfoRef<'a> {
-    pub byte_offset: u32,
-    pub schema: &'a ChunkSchema,
-    pub parent: ParentInfo,
-}
-
-impl RootChunkSchema {
-    pub fn new(schema: ChunkSchema) -> Self {
-        fn add(s: &ChunkSchema, byte_offset: u32, parent: ParentInfo) {
-            // TODO: compute any desired derived data from schema here.
-            for (label, sub_schema) in s.fields.iter() {
-                for i in 0..sub_schema.schema.node_count {
-                    add(
-                        &sub_schema.schema,
-                        byte_offset + sub_schema.byte_offset + i * sub_schema.schema.bytes_per_node,
-                        ParentInfo {
-                            parent: Some(label.clone()), // TODO
-                            index: i as usize,
-                        },
-                    )
-                }
-            }
-        }
-
-        add(
-            &schema,
-            0,
-            ParentInfo {
-                parent: None,
-                index: 0,
-            },
-        );
-
-        RootChunkSchema { schema }
     }
 }
 
@@ -116,8 +60,16 @@ pub struct UniformChunkNode<'a> {
 }
 
 impl UniformChunk {
+    pub fn new(schema: Rc<ChunkSchema>, data: Vec<u8>) -> UniformChunk {
+        debug_assert_eq!(
+            schema.bytes_per_node as usize * schema.node_count as usize,
+            data.len()
+        );
+        UniformChunk { schema, data }
+    }
+
     pub fn get_count(&self) -> usize {
-        self.schema.schema.node_count as usize
+        self.schema.node_count as usize
     }
 
     /// View the first node in the chunk.
@@ -125,7 +77,7 @@ impl UniformChunk {
     pub fn view(&self) -> UniformChunkNode {
         UniformChunkNode {
             view: ChunkInfo {
-                schema: &self.schema.schema,
+                schema: &self.schema,
                 data: self.data.as_slice(),
             },
             offset: 0,

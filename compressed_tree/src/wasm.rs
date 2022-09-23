@@ -9,9 +9,7 @@ use crate::{
         example_node::BasicNode,
         test_stuff::walk_all,
         tree::{Node, NodeNav},
-        uniform_chunk::{
-            ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk, UniformChunkNode,
-        },
+        uniform_chunk::{ChunkSchema, OffsetSchema, UniformChunk, UniformChunkNode},
     },
     EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType,
 };
@@ -130,15 +128,10 @@ fn chunked_test_tree(fields: usize, per_field: usize) -> UniformChunk {
         root.fields.insert(FieldKey(f.to_string()), children);
     }
 
-    let chunk_schema = Rc::new(RootChunkSchema::new(root));
-
     let data: Vec<u8> = vec![];
     debug_assert_eq!(data.len(), 0);
 
-    UniformChunk {
-        schema: chunk_schema.clone(),
-        data,
-    }
+    UniformChunk::new(Rc::new(root), data)
 }
 
 #[wasm_bindgen]

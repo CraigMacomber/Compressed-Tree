@@ -2,7 +2,7 @@ use crate::{FieldKey, TreeType};
 
 use super::{
     tree::{Indexable, Node},
-    uniform_chunk::{ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk},
+    uniform_chunk::{ChunkSchema, OffsetSchema, UniformChunk},
 };
 use rand::Rng;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -61,8 +61,6 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
         .collect(),
     };
 
-    let chunk_schema = Rc::new(RootChunkSchema::new(schema));
-
     let data: Vec<u8> = std::iter::repeat(&[1u8, 2, 3, 4])
         .take(chunk_size)
         .flat_map(|x| x.iter())
@@ -70,10 +68,7 @@ pub fn big_tree(chunk_size: usize) -> UniformChunk {
         .collect();
     debug_assert_eq!(data.len(), chunk_size * 4);
 
-    UniformChunk {
-        schema: chunk_schema.clone(),
-        data,
-    }
+    UniformChunk::new(Rc::new(schema), data)
 }
 
 pub fn walk_all<'a, T: Node<'a>>(n: T) -> usize {
