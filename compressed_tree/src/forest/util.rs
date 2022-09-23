@@ -7,7 +7,13 @@ pub fn slice_with_length(
     offset: usize,
     length: usize,
 ) -> Focus<'_, u8> {
-    focus.narrow(offset..offset + length)
+    // Narrow does not like empty ranges, so special case them:
+    if length == 0 {
+        assert!(focus.len() == 0); // TODO: fix https://github.com/bodil/im-rs/issues/145 ?
+        focus
+    } else {
+        focus.narrow(offset..offset + length)
+    }
 }
 
 pub type ImHashMap<K, V> = im_rc::HashMap<K, V, ahash::RandomState>;

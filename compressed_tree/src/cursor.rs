@@ -3,7 +3,7 @@ use crate::{
     EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType, Value,
 };
 
-pub struct BasicFieldsCursor<'a, T: Node<'a>> {
+pub struct GenericFieldsCursor<'a, T: Node<'a>> {
     current: BasicCursorLevel<'a, T>,
     /// Cache of Nodes at the current key.
     nodes: T::TField,
@@ -25,14 +25,14 @@ struct BasicCursorFieldsLevel<'a, T: Node<'a>> {
     fields: Option<T::TFields>,
 }
 
-pub struct BasicNodesCursor<'a, T: Node<'a>> {
+pub struct GenericNodesCursor<'a, T: Node<'a>> {
     current: BasicCursorNodesLevel<'a, T>,
     parents: Vec<BasicCursorLevel<'a, T>>,
 }
 
-impl<'a, T: Node<'a>> BasicNodesCursor<'a, T> {
-    pub fn new(n: T::TField) -> BasicNodesCursor<'a, T> {
-        BasicNodesCursor {
+impl<'a, T: Node<'a>> GenericNodesCursor<'a, T> {
+    pub fn new(n: T::TField) -> GenericNodesCursor<'a, T> {
+        GenericNodesCursor {
             parents: vec![],
             current: BasicCursorNodesLevel { index: 0, nodes: n },
         }
@@ -43,8 +43,8 @@ impl<'a, T: Node<'a>> BasicNodesCursor<'a, T> {
     }
 }
 
-impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
-    type TFields = BasicFieldsCursor<'a, T>;
+impl<'a, T: Node<'a>> NodesCursor for GenericNodesCursor<'a, T> {
+    type TFields = GenericFieldsCursor<'a, T>;
 
     fn field_index(&self) -> u32 {
         self.current.index as u32
@@ -75,7 +75,7 @@ impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
 
     fn exit_node(mut self) -> Self::TFields {
         let current = self.parents.pop().unwrap();
-        BasicFieldsCursor {
+        GenericFieldsCursor {
             nodes: self.current.nodes,
             current,
             parents: self.parents,
@@ -92,7 +92,7 @@ impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
         let mut iter = self.current_node().get_fields();
         let first = iter.next();
         match first {
-            Some((key, nodes)) => EitherCursor::Fields(BasicFieldsCursor {
+            Some((key, nodes)) => EitherCursor::Fields(GenericFieldsCursor {
                 nodes,
                 current: BasicCursorLevel {
                     nodes: self.current,
@@ -108,7 +108,7 @@ impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
     }
 
     fn enter_field(self, key: FieldKey) -> EitherCursor<Self, Self::TFields> {
-        EitherCursor::Fields(BasicFieldsCursor {
+        EitherCursor::Fields(GenericFieldsCursor {
             nodes: self.current_node().get_field(key.clone()),
             current: BasicCursorLevel {
                 nodes: self.current,
@@ -128,8 +128,8 @@ impl<'a, T: Node<'a>> NodesCursor for BasicNodesCursor<'a, T> {
     }
 }
 
-impl<'a, T: Node<'a>> FieldsCursor for BasicFieldsCursor<'a, T> {
-    type TNodes = BasicNodesCursor<'a, T>;
+impl<'a, T: Node<'a>> FieldsCursor for GenericFieldsCursor<'a, T> {
+    type TNodes = GenericNodesCursor<'a, T>;
 
     fn next_field(mut self) -> EitherCursor<Self::TNodes, Self> {
         let fields = &mut self.current.fields.fields;
@@ -147,7 +147,7 @@ impl<'a, T: Node<'a>> FieldsCursor for BasicFieldsCursor<'a, T> {
     }
 
     fn exit_field(self) -> Self::TNodes {
-        BasicNodesCursor {
+        GenericNodesCursor {
             current: self.current.nodes,
             parents: self.parents,
         }
@@ -171,7 +171,7 @@ impl<'a, T: Node<'a>> FieldsCursor for BasicFieldsCursor<'a, T> {
 
     fn enter_node(mut self, child_index: u32) -> Self::TNodes {
         self.parents.push(self.current);
-        BasicNodesCursor {
+        GenericNodesCursor {
             current: BasicCursorNodesLevel {
                 index: child_index as usize,
                 nodes: self.nodes,

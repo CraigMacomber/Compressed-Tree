@@ -1,37 +1,53 @@
-use std::{collections::HashMap, mem::replace, ops::DerefMut};
+use std::{collections::HashMap, mem::replace, ops::DerefMut, rc::Rc};
 
 use owning_ref::OwningHandle;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    cursor::{BasicFieldsCursor, BasicNodesCursor},
-    forest::{example_node::BasicNode, test_stuff::walk_all, tree::Node},
+    cursor::{GenericFieldsCursor, GenericNodesCursor},
+    forest::{
+        example_node::BasicNode,
+        test_stuff::walk_all,
+        tree::{Node, NodeNav},
+        uniform_chunk::{
+            ChunkSchema, OffsetSchema, RootChunkSchema, UniformChunk, UniformChunkNode,
+        },
+    },
     EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType,
 };
 
-type InnerNode = BasicNode;
+// type InnerNode<'a> = UniformChunkNode<'a>;
+// type Tree = UniformChunk;
+// const BUILD_TEST_TREE: fn(usize, usize) -> Tree = chunked_test_tree;
+type InnerNode<'a> = &'a BasicNode;
+type Tree = Vec<BasicNode>;
+const BUILD_TEST_TREE: fn(usize, usize) -> Tree = basic_test_tree;
+
+type StaticNode = InnerNode<'static>;
+type Nodes<'a> = <InnerNode<'a> as NodeNav<'a>>::TField;
 
 #[wasm_bindgen]
 pub struct WasmCursor {
-    data: Handle<&'static InnerNode>,
+    data: Handle<StaticNode>,
 }
 
 struct CursorWrap<'a, T: Node<'a>>(Cursor<'a, T>);
 
 enum Cursor<'a, T: Node<'a>> {
-    Nodes(BasicNodesCursor<'a, T>),
-    Fields(BasicFieldsCursor<'a, T>),
+    Nodes(GenericNodesCursor<'a, T>),
+    Fields(GenericFieldsCursor<'a, T>),
     Empty,
 }
 
-type Handle<T> = OwningHandle<Box<Vec<InnerNode>>, CursorWrap<'static, T>>;
+type Handle<T> = OwningHandle<Box<Tree>, CursorWrap<'static, T>>;
 
-fn owning_handle(v: Vec<InnerNode>) -> Handle<&'static InnerNode> {
+fn owning_handle(v: Tree) -> Handle<StaticNode> {
     let cell_ref = Box::new(v);
     let handle = OwningHandle::new_with_fn(cell_ref, |x| {
         let x = unsafe { x.as_ref() }.unwrap();
-        let y: &[InnerNode] = &x;
-        let root = BasicNodesCursor::new(y);
+        let y: Nodes = &x;
+        // let y: Nodes = x.view().view;
+        let root = GenericNodesCursor::new(y);
         let cursor = CursorWrap(Cursor::Nodes(root));
         cursor
     });
@@ -55,18 +71,73 @@ impl<'a, T: Node<'a>> core::ops::DerefMut for CursorWrap<'a, T> {
 }
 
 impl WasmCursor {
-    fn cursor_mut(&mut self) -> &mut Cursor<'static, &'static InnerNode> {
+    fn cursor_mut(&mut self) -> &mut Cursor<'static, StaticNode> {
         self.data.deref_mut()
     }
 
-    fn cursor(&self) -> &Cursor<'static, &'static InnerNode> {
+    fn cursor(&self) -> &Cursor<'static, StaticNode> {
         &self.data
     }
 
-    fn new(v: Vec<InnerNode>) -> Self {
+    fn new(v: Tree) -> Self {
         WasmCursor {
             data: owning_handle(v),
         }
+    }
+}
+
+fn basic_test_tree(fields: usize, per_field: usize) -> Vec<BasicNode> {
+    fn test_node() -> BasicNode {
+        let tree: BasicNode = BasicNode {
+            def: TreeType("".into()),
+            payload: None,
+            fields: HashMap::default(),
+        };
+        tree
+    }
+    let mut root = test_node();
+    for f in 0..fields {
+        let children = (0..per_field).map(|_| test_node()).collect();
+        root.fields.insert(FieldKey(f.to_string()), children);
+    }
+    vec![root]
+}
+
+fn chunked_test_tree(fields: usize, per_field: usize) -> UniformChunk {
+    // Chunk of Leaf nodes schema
+    let sub_schema = ChunkSchema {
+        def: TreeType("".into()),
+        node_count: per_field as u32,
+        bytes_per_node: 0,
+        payload_size: None,
+        fields: HashMap::default(),
+    };
+
+    // Root schema
+    let mut root = ChunkSchema {
+        def: TreeType("".into()),
+        node_count: (fields * per_field + 1) as u32,
+        bytes_per_node: 0,
+        payload_size: None,
+        fields: HashMap::default(),
+    };
+
+    for f in 0..fields {
+        let children = OffsetSchema {
+            byte_offset: 0,
+            schema: sub_schema.clone(),
+        };
+        root.fields.insert(FieldKey(f.to_string()), children);
+    }
+
+    let chunk_schema = Rc::new(RootChunkSchema::new(root));
+
+    let data: im_rc::Vector<u8> = vec![].into();
+    debug_assert_eq!(data.len(), 0);
+
+    UniformChunk {
+        schema: chunk_schema.clone(),
+        data: data.into(),
     }
 }
 
@@ -76,20 +147,7 @@ impl WasmCursor {
     /// TODO: Public API for creating trees.
     #[wasm_bindgen(constructor)]
     pub fn new_from_test_data(fields: usize, per_field: usize) -> Self {
-        fn test_node() -> BasicNode {
-            let tree: BasicNode = BasicNode {
-                def: TreeType("".into()),
-                payload: None,
-                fields: HashMap::default(),
-            };
-            tree
-        }
-        let mut root = test_node();
-        for f in 0..fields {
-            let children = (0..per_field).map(|_| test_node()).collect();
-            root.fields.insert(FieldKey(f.to_string()), children);
-        }
-        WasmCursor::new(vec![root])
+        WasmCursor::new(BUILD_TEST_TREE(fields, per_field))
     }
 
     #[wasm_bindgen(getter)]
@@ -349,7 +407,7 @@ pub fn walk_subtree_internal(n: &mut WasmCursor) -> usize {
     result.0
 }
 
-fn inner<'a, T: Node<'a>>(c: BasicNodesCursor<'a, T>) -> (usize, BasicNodesCursor<'a, T>) {
+fn inner<'a, T: Node<'a>>(c: GenericNodesCursor<'a, T>) -> (usize, GenericNodesCursor<'a, T>) {
     let mut count = 1;
     let mut in_fields = c.first_field();
     loop {
@@ -366,7 +424,9 @@ fn inner<'a, T: Node<'a>>(c: BasicNodesCursor<'a, T>) -> (usize, BasicNodesCurso
     }
 }
 
-fn inner_field<'a, T: Node<'a>>(c: BasicFieldsCursor<'a, T>) -> (usize, BasicFieldsCursor<'a, T>) {
+fn inner_field<'a, T: Node<'a>>(
+    c: GenericFieldsCursor<'a, T>,
+) -> (usize, GenericFieldsCursor<'a, T>) {
     let mut count = 0;
     let mut in_nodes = c.first_node();
     loop {
@@ -391,6 +451,7 @@ fn inner_field<'a, T: Node<'a>>(c: BasicFieldsCursor<'a, T>) -> (usize, BasicFie
 pub fn walk_subtree_internal2(n: &mut WasmCursor) -> usize {
     let tree = n.data.as_owner();
     walk_all(&tree[0])
+    // walk_all(tree.view())
 }
 
 #[cfg(test)]

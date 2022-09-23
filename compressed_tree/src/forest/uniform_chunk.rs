@@ -133,8 +133,6 @@ impl UniformChunk {
     }
 }
 
-pub type ChunkTree<'a> = UniformChunkNode<'a>;
-
 impl<'a> UniformChunkNode<'a> {
     fn data(&self) -> ImSlice<'a> {
         let offset = self.offset as usize;
