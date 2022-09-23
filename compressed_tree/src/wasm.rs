@@ -4,14 +4,16 @@ use owning_ref::OwningHandle;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    basic_tree::{BasicFieldsCursor, BasicNodesCursor},
-    forest::{example_node::BasicNode, tree::Node},
+    cursor::{BasicFieldsCursor, BasicNodesCursor},
+    forest::{example_node::BasicNode, test_stuff::walk_all, tree::Node},
     EitherCursor, FieldKey, FieldsCursor, NodesCursor, TreeType,
 };
 
+type InnerNode = BasicNode;
+
 #[wasm_bindgen]
 pub struct WasmCursor {
-    data: Handle<&'static BasicNode>,
+    data: Handle<&'static InnerNode>,
 }
 
 struct CursorWrap<'a, T: Node<'a>>(Cursor<'a, T>);
@@ -22,13 +24,13 @@ enum Cursor<'a, T: Node<'a>> {
     Empty,
 }
 
-type Handle<T> = OwningHandle<Box<Vec<BasicNode>>, CursorWrap<'static, T>>;
+type Handle<T> = OwningHandle<Box<Vec<InnerNode>>, CursorWrap<'static, T>>;
 
-fn owning_handle(v: Vec<BasicNode>) -> Handle<&'static BasicNode> {
+fn owning_handle(v: Vec<InnerNode>) -> Handle<&'static InnerNode> {
     let cell_ref = Box::new(v);
     let handle = OwningHandle::new_with_fn(cell_ref, |x| {
         let x = unsafe { x.as_ref() }.unwrap();
-        let y: &[BasicNode] = &x;
+        let y: &[InnerNode] = &x;
         let root = BasicNodesCursor::new(y);
         let cursor = CursorWrap(Cursor::Nodes(root));
         cursor
@@ -53,15 +55,15 @@ impl<'a, T: Node<'a>> core::ops::DerefMut for CursorWrap<'a, T> {
 }
 
 impl WasmCursor {
-    fn cursor_mut(&mut self) -> &mut Cursor<'static, &'static BasicNode> {
+    fn cursor_mut(&mut self) -> &mut Cursor<'static, &'static InnerNode> {
         self.data.deref_mut()
     }
 
-    fn cursor(&self) -> &Cursor<'static, &'static BasicNode> {
+    fn cursor(&self) -> &Cursor<'static, &'static InnerNode> {
         &self.data
     }
 
-    fn new(v: Vec<BasicNode>) -> Self {
+    fn new(v: Vec<InnerNode>) -> Self {
         WasmCursor {
             data: owning_handle(v),
         }
@@ -330,6 +332,67 @@ pub fn walk_subtree(n: &mut WasmCursor) -> usize {
     count
 }
 
+/// Walks the subtree under the cursor's current node.
+/// Uses lower level API.
+///
+/// Returns the number of nodes in the subtree, including its root.
+#[wasm_bindgen(js_name = walkSubtreeInternal)]
+pub fn walk_subtree_internal(n: &mut WasmCursor) -> usize {
+    let cursor = n.cursor_mut();
+    let old = replace(cursor, Cursor::Empty);
+    let cursor_inner = match old {
+        Cursor::Nodes(c) => c,
+        _ => panic!(),
+    };
+    let result = inner(cursor_inner);
+    *cursor = Cursor::Nodes(result.1);
+    result.0
+}
+
+fn inner<'a, T: Node<'a>>(c: BasicNodesCursor<'a, T>) -> (usize, BasicNodesCursor<'a, T>) {
+    let mut count = 1;
+    let mut in_fields = c.first_field();
+    loop {
+        match in_fields {
+            EitherCursor::Nodes(n) => {
+                return (count, n);
+            }
+            EitherCursor::Fields(f) => {
+                let result = inner_field(f);
+                in_fields = result.1.next_field();
+                count += result.0;
+            }
+        }
+    }
+}
+
+fn inner_field<'a, T: Node<'a>>(c: BasicFieldsCursor<'a, T>) -> (usize, BasicFieldsCursor<'a, T>) {
+    let mut count = 0;
+    let mut in_nodes = c.first_node();
+    loop {
+        match in_nodes {
+            EitherCursor::Nodes(n) => {
+                let result = inner(n);
+                in_nodes = result.1.next_node();
+                count += result.0;
+            }
+            EitherCursor::Fields(f) => {
+                return (count, f);
+            }
+        }
+    }
+}
+
+/// Walks the tree this cursor is attached to.
+/// Uses even lower level API.
+///
+/// Returns the number of nodes in the tree, including its root.
+#[wasm_bindgen(js_name = walkSubtreeInternal2)]
+pub fn walk_subtree_internal2(n: &mut WasmCursor) -> usize {
+    let tree = n.data.as_owner();
+    walk_all(&tree[0])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -338,5 +401,17 @@ mod tests {
     fn walk_wasm_cursor() {
         let mut cursor = WasmCursor::new_from_test_data(10, 10);
         assert_eq!(walk_subtree(&mut cursor), 101);
+    }
+
+    #[test]
+    fn walk_wasm_cursor_internal() {
+        let mut cursor = WasmCursor::new_from_test_data(10, 10);
+        assert_eq!(walk_subtree_internal(&mut cursor), 101);
+    }
+
+    #[test]
+    fn walk_wasm_cursor_internal2() {
+        let mut cursor = WasmCursor::new_from_test_data(10, 10);
+        assert_eq!(walk_subtree_internal2(&mut cursor), 101);
     }
 }

@@ -1,4 +1,4 @@
-import { walkSubtree, WasmCursor } from "compressed-tree";
+import { walkSubtree, WasmCursor, walkSubtreeInternal, walkSubtreeInternal2 } from "compressed-tree";
 
 export {};
 
@@ -9,33 +9,27 @@ async function doLoop(): Promise<void> {
   const cursor = new WasmCursor(fields, nodes);
   const outerRuns = 5;
   const runs = 1000;
+  const walkers: [string, (w: WasmCursor) => number][] = [
+    ["wasm", walkSubtree],
+    ["wasm internal cursor", walkSubtreeInternal],
+    ["wasm node", walkSubtreeInternal2],
+    ["JS", walkSubtreeJS],
+  ]
 
-  console.log(`${fields} of ${nodes}: (Total Nodes: ${expected}) wasm walk`);
-  for (let x = 1; x <= outerRuns; x++) {
-    const t0 = performance.now();
-    for (let i = 1; i <= runs; i++) {
-      const count = walkSubtree(cursor);
-      if (count !== expected) {
-        throw new Error();
+  for (const [name, walker] of walkers) {
+    console.log(`${fields} of ${nodes}: (Total Nodes: ${expected}) ${name} walk`);
+    for (let x = 1; x <= outerRuns; x++) {
+      const t0 = performance.now();
+      for (let i = 1; i <= runs; i++) {
+        const count = walker(cursor);
+        if (count !== expected) {
+          throw new Error();
+        }
       }
+      const t1 = performance.now();
+      const perRun = (t1 - t0) / runs;
+      console.log(`${perRun} ms per run`);
     }
-    const t1 = performance.now();
-    const perRun = (t1 - t0) / runs;
-    console.log(`${perRun} ms per run`);
-  }
-
-  console.log(`${fields} of ${nodes}: (Total Nodes: ${expected}) JS walk`);
-  for (let x = 1; x <= outerRuns; x++) {
-    const t0 = performance.now();
-    for (let i = 1; i <= runs; i++) {
-      const count = walkSubtreeJS(cursor);
-      if (count !== expected) {
-        throw new Error();
-      }
-    }
-    const t1 = performance.now();
-    const perRun = (t1 - t0) / runs;
-    console.log(`${perRun} ms per run`);
   }
 
   cursor.free();

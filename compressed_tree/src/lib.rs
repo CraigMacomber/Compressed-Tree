@@ -9,6 +9,11 @@ pub struct FieldKey(String);
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct TreeType(String);
 
+pub mod cursor;
+pub mod dummy_cursor;
+pub mod forest;
+pub mod wasm;
+
 trait NodesCursor: Sized {
     type TFields: FieldsCursor<TNodes = Self>;
     // ********** APIs for when mode = Nodes ********** //
@@ -192,8 +197,3 @@ enum EitherCursor<TNodes, TFields: FieldsCursor<TNodes = TNodes>> {
     Nodes(TNodes),
     Fields(TFields),
 }
-
-pub mod basic_tree;
-pub mod dummy_cursor;
-pub mod forest;
-pub mod wasm;
