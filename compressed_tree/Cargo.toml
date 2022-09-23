@@ -16,7 +16,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = "0.2"
-im-rc = "15.0.0"
 num-integer = "0.1.44"
 rand = "0.8.5"
 ahash = "0.8.0"

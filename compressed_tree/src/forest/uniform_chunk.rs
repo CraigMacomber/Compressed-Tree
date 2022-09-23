@@ -224,10 +224,9 @@ impl<'a> Iterator for ChunkFieldsIterator<'a> {
     type Item = (&'a FieldKey, ChunkInfo<'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        // let EMPTY_DATA: im_rc::vector::Vector<u8> = im_rc::vector::Vector::default();
         let (label, schema) = self.fields.next()?;
         let data = slice_with_length(
-            self.data.clone(),
+            self.data,
             schema.byte_offset as usize,
             schema.schema.bytes_per_node as usize,
         );

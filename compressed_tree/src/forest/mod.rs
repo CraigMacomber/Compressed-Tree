@@ -1,5 +1,5 @@
 /*!
-Experimental Copy On Write Tree in the style of [Fluid's experimental tree](https://github.com/microsoft/FluidFramework/tree/main/experimental/dds/tree#tree-abstraction).
+Tree in the style of [Fluid's experimental tree](https://github.com/microsoft/FluidFramework/tree/main/experimental/dds/tree#tree-abstraction).
 
 This prototypes a forest using [im_rc::OrdMap] which allows with compressed sequences via [uniform_chunk],
 as well as a general architectural pattern for all of this with low coupling and a nice API in (See [nav]).
@@ -25,7 +25,6 @@ or to virtualize the logical tree, and load chunks of it into the Forest.
 */
 
 extern crate derive_more;
-extern crate im_rc;
 extern crate num_integer;
 
 pub mod example_node;

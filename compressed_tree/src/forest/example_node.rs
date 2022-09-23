@@ -13,7 +13,7 @@ use super::{
 pub struct BasicNode {
     pub def: TreeType,
     pub payload: Option<Vec<u8>>,
-    pub fields: HashMap<FieldKey, Vec<BasicNode>>, // TODO: Use hash map from im_rc
+    pub fields: HashMap<FieldKey, Vec<BasicNode>>,
 }
 
 impl<'a> NodeNav<'a> for &'a BasicNode {
