@@ -102,30 +102,22 @@ fn basic_test_tree(fields: usize, per_field: usize) -> BasicTree {
 
 fn chunked_test_tree(fields: usize, per_field: usize) -> UniformChunk {
     // Chunk of Leaf nodes schema
-    let sub_schema = ChunkSchema {
-        def: TreeType("".into()),
-        node_count: per_field as u32,
-        bytes_per_node: 0,
-        payload_size: None,
-        fields: HashMap::default(),
-    };
+    let sub_schema = ChunkSchema::new_leaf(TreeType("".into()), per_field as u32, None);
+
+    let field_list: Vec<(FieldKey, OffsetSchema)> = (0..fields)
+        .map(|f| {
+            (
+                FieldKey(f.to_string()),
+                OffsetSchema {
+                    byte_offset: 0,
+                    schema: sub_schema.clone(),
+                },
+            )
+        })
+        .collect();
 
     // Root schema
-    let mut root = ChunkSchema {
-        def: TreeType("".into()),
-        node_count: 1,
-        bytes_per_node: 0,
-        payload_size: None,
-        fields: HashMap::default(),
-    };
-
-    for f in 0..fields {
-        let children = OffsetSchema {
-            byte_offset: 0,
-            schema: sub_schema.clone(),
-        };
-        root.fields.insert(FieldKey(f.to_string()), children);
-    }
+    let mut root = ChunkSchema::new(TreeType("".into()), 1, 0, None, &field_list);
 
     let data: Vec<u8> = vec![];
     debug_assert_eq!(data.len(), 0);
